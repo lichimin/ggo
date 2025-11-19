@@ -1,0 +1,18 @@
+ggo/
+├── main.go                 # 应用入口文件
+├── go.mod                 # Go模块文件
+├── config/                # 配置文件
+│   └── config.go
+├── controllers/           # 控制器
+│   └── user_controller.go
+├── models/                # 模型（直接包含数据库操作）
+│   └── user.go
+├── middleware/            # 中间件
+│   └── cors.go
+├── database/              # 数据库连接
+│   ├── postgres.go
+│   └── redis.go
+├── routes/                # 路由
+│   └── routes.go
+└── utils/                 # 工具函数
+    └── response.go
