@@ -22,12 +22,13 @@ func SetupRoutes() *gin.Engine {
 	bulletController := controllers.NewBulletController(database.DB)
 	skillController := controllers.NewSkillController(database.DB)
 	sceneController := controllers.NewSceneController(database.DB)
-
+	treasureController := controllers.NewTreasureController(database.DB)
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
 	{
 		public.POST("/login", userController.Login)
-		public.GET("/scenes", sceneController.GetScenes) // 场景列表设为公开接口
+		public.GET("/scenes", sceneController.GetScenes)          // 场景列表设为公开接口
+		public.GET("/treasures", treasureController.GetTreasures) // 宝物列表设为公开接口
 	}
 
 	// 受保护路由（需要认证）
