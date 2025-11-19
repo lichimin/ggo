@@ -1,0 +1,191 @@
+services:
+ lcm_mongo:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/mongo:latest
+   container_name: lcm_mongo
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: root
+     MONGO_INITDB_ROOT_PASSWORD: 123456
+   ports:
+     - "10021:27017"
+   restart: always
+
+ lcm_rabbitmq:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/rabbitmq:2
+   container_name: lcm_rabbitmq
+   ports:
+     - "10022:5672"
+     - "10023:15672"
+   environment:
+     RABBITMQ_DEFAULT_USER: "admin"
+     RABBITMQ_DEFAULT_PASS: "123456"
+   restart: always
+
+  lcm_redis:
+    image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/redis:latest
+    container_name: lcm_redis
+    command: redis-server --requirepass 123456 --appendonly yes
+    ports:
+      - "10024:6379"
+    restart: always
+
+ lcm_test_php:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/php:zity
+   container_name: lcm_test_php
+   ports:
+     - "10025:80"
+   restart: always
+   working_dir: /var/www/lcm_php/
+   command: php artisan serve --host=0.0.0.0 --port=80
+   
+ lcm_test_node:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/node:latest
+   container_name: lcm_test_node
+   ports:
+     - "10028:3000"
+   volumes:
+     - /docker/www/lcm_test:/usr/src/app
+   working_dir: /usr/src/app
+   environment:
+     - NODE_ENV=development
+   restart: unless-stopped
+
+ lcm_dev_node:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/node:latest
+   container_name: lcm_dev_node
+   ports:
+     - "10029:3000"
+   volumes:
+     - /docker/www/lcm_dev:/usr/src/app
+   working_dir: /usr/src/app
+   environment:
+     - NODE_ENV=development
+   restart: unless-stopped
+   
+ lcm_dev_php:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/php:zity
+   container_name: lcm_dev_php
+   ports:
+     - "10026:80"
+   restart: always
+   working_dir: /var/www/lcm_php/
+   command: php artisan serve --host=0.0.0.0 --port=80
+   
+ lcm_task_php:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/php:zity
+   container_name: lcm_task_php
+   ports:
+    - "10016:80"
+   restart: always
+   volumes:
+    - /docker/data/excel:/var/www/online/zity/public/
+   working_dir: /var/www/lcm_php/
+   command: php artisan serve --host=0.0.0.0 --port=80
+   
+ lcm_sql:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/mysql:zity3
+   container_name: lcm_sql
+   environment:
+     MYSQL_ROOT_PASSWORD: 123456
+     MYSQL_DATABASE: new_zity
+     MYSQL_ROOT_HOST: '%'
+   ports:
+     - "10027:3306"
+   command: --default-authentication-plugin=mysql_native_password 
+   restart: always
+
+  lcm_nginx:
+    image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/nginx:latest
+    container_name: lcm_nginx
+    ports:
+      - "10019:10019"
+      - "10018:10018"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /docker/data/nginx/conf.d:/etc/nginx/conf.d
+      - /docker/data/nginx/logs:/var/log/nginx
+      - /docker/www:/var/www
+    depends_on:
+      - lcm_golang
+      - lcm_dev_php
+    restart: always
+
+ lcm_php_tp:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/php:8.3.19
+   container_name: lcm_php_tp
+   ports:
+     - "10017:9501"
+   restart: always
+   volumes:
+     - /docker/www/lcm_php_tp:/var/www/lcm_php_tp
+   working_dir: /var/www/lcm_php_tp/
+   command: php -S 0.0.0.0:80 -t /var/www/lcm_php_tp
+   
+ lcm_php_tp_test:
+   image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/php:8.3.19
+   container_name: lcm_php_tp_test
+   ports:
+     - "10020:9501"
+   restart: always
+   volumes:
+     - /docker/www/lcm_php_tp_test:/var/www/lcm_php_tp
+   working_dir: /var/www/lcm_php_tp/
+   command: php -S 0.0.0.0:80 -t /var/www/lcm_php_tp
+
+  lcm_golang:
+    image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/go:1.2.4
+    container_name: lcm_golang
+    ports:
+      - "10005:8080"
+    volumes:
+      - /docker/www:/go/src
+    working_dir: /go/src/
+    restart: always
+    command: tail -f /dev/null
+
+
+  lcm_node:
+    image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/node:20
+    container_name: lcm_node
+    ports:
+      - "10030:3000"  # 可以根据需要修改端口
+    volumes:
+      - /docker/www/lcm_node:/usr/src/app
+      - /usr/src/app/node_modules  # 避免覆盖容器内的node_modules
+    working_dir: /usr/src/app
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=lcm_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=123456
+    depends_on:
+      - lcm_redis
+    restart: unless-stopped
+    command: >
+      sh -c "
+        if [ -f package.json ]; then
+          npm install && 
+          npm start;
+        else
+          echo 'Waiting for application code...' && 
+          tail -f /dev/null;
+        fi"
+    
+  lcm_pg:
+    image: crpi-foxlg1qasdtwr17t.cn-guangzhou.personal.cr.aliyuncs.com/lichimin/pgsql:15
+    container_name: lcm_pg
+    environment:
+      POSTGRES_DB: test_zity
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zity123456
+    ports:
+      - "10006:5432"
+    volumes:
+      - /docker/data/pg:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
