@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"myapp/models"
-	"myapp/utils"
+	"ggo/models"
+	"ggo/utils"
 	"net/http"
 	"strconv"
 
