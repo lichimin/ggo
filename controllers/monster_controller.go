@@ -71,7 +71,7 @@ func (mc *MonsterController) GetMonsters(c *gin.Context) {
 
 	if level != "" {
 		levelInt, _ := strconv.Atoi(level)
-		query = query.Where("level = ?", levelInt)
+		query = query.Where("level <=  ?", levelInt)
 	}
 
 	if location != "" {

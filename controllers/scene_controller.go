@@ -26,11 +26,17 @@ func (sc *SceneController) GetScenes(c *gin.Context) {
 	name := c.Query("name")
 	region := c.Query("region")
 	isActive := c.Query("is_active")
+	level := c.Query("level")
 
 	query := sc.db.Model(&models.Scene{})
 
 	if name != "" {
 		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+
+	if level != "" {
+		levelInt, _ := strconv.Atoi(level)
+		query = query.Where("level <=  ?", levelInt)
 	}
 
 	if region != "" {
