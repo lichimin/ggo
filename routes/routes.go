@@ -24,12 +24,15 @@ func SetupRoutes() *gin.Engine {
 	sceneController := controllers.NewSceneController(database.DB)
 	treasureController := controllers.NewTreasureController(database.DB)
 	myItemController := controllers.NewMyItemController(database.DB)
+	homeConfigController := controllers.NewHomeConfigController(database.DB)
+
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
 	{
 		public.POST("/login", userController.Login)
 		public.GET("/scenes", sceneController.GetScenes)          // 场景列表设为公开接口
 		public.GET("/treasures", treasureController.GetTreasures) // 宝物列表设为公开接口
+		public.GET("/home-configs", homeConfigController.GetHomeConfigs)
 	}
 
 	// 受保护路由（需要认证）
