@@ -134,28 +134,21 @@ func (usc *UserSkinController) GetActiveSkin(c *gin.Context) {
 		return
 	}
 
-	// 方法2：先查询 UserSkin，再查询关联的 Skin
+	// 方法1：使用原生 SQL 查询
 	var userSkin models.UserSkin
-	result := usc.db.Where("user_id = ? AND is_active = ?", userID, true).First(&userSkin)
+	result := usc.db.Raw(`
+		SELECT us.*, s.* 
+		FROM user_skins us 
+		JOIN skins s ON us.skin_id = s.id 
+		WHERE us.user_id = ? AND us.is_active = ?
+	`, userID, true).Scan(&userSkin)
+
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "未启用任何皮肤")
 		return
 	}
 
-	// 手动查询关联的 Skin
-	var skin models.Skin
-	if err := usc.db.First(&skin, userSkin.SkinID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "皮肤信息不存在")
-		return
-	}
-
-	// 创建响应结构
-	response := gin.H{
-		"user_skin": userSkin,
-		"skin":      skin,
-	}
-
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, userSkin)
 }
 
 // DeleteUserSkin 删除用户皮肤（退还等操作）
