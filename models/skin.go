@@ -18,7 +18,6 @@ type Skin struct {
 	SkillID        int     `json:"skill_id" gorm:"default:0"`          // 技能ID
 	BulletID       int     `json:"bullet_id" gorm:"default:0"`         // 子弹ID
 	Price          int     `json:"price" gorm:"default:0"`             // 价格
-	IsActive       bool    `json:"is_active" gorm:"default:true"`      // 是否激活
 	CreatedAt      int64   `json:"created_at" gorm:"autoCreateTime"`   // 创建时间
 	UpdatedAt      int64   `json:"updated_at" gorm:"autoUpdateTime"`   // 更新时间
 }

@@ -59,17 +59,11 @@ func (sc *SkinController) GetSkins(c *gin.Context) {
 
 	// 查询参数
 	name := c.Query("name")
-	isActive := c.Query("is_active")
 
 	query := sc.db.Model(&models.Skin{})
 
 	if name != "" {
 		query = query.Where("name LIKE ?", "%"+name+"%")
-	}
-
-	if isActive != "" {
-		active, _ := strconv.ParseBool(isActive)
-		query = query.Where("is_active = ?", active)
 	}
 
 	result := query.Find(&skins)

@@ -134,15 +134,10 @@ func (usc *UserSkinController) GetActiveSkin(c *gin.Context) {
 		return
 	}
 
-	// 方法1：使用原生 SQL 查询
 	var userSkin models.UserSkin
-	result := usc.db.Raw(`
-		SELECT us.*, s.* 
-		FROM user_skins us 
-		JOIN skins s ON us.skin_id = s.id 
-		WHERE us.user_id = ? AND us.is_active = ?
-	`, userID, true).Scan(&userSkin)
 
+	// 查询用户当前启用的皮肤
+	result := usc.db.Preload("Skin").Where("user_id = ?", userID).First(&userSkin)
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "未启用任何皮肤")
 		return
