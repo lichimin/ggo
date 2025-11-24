@@ -202,3 +202,88 @@ func (mic *MyItemController) DeleteMyItem(c *gin.Context) {
 
 	utils.SuccessResponse(c, gin.H{"message": "删除成功"})
 }
+
+// SellMultipleTreasures 批量出售宝物
+func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
+	var request struct {
+		UserID    uint   `json:"user_id" binding:"required"`
+		MyItemIDs []uint `json:"my_item_ids" binding:"required"` // 我的物品ID列表
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	// 开始事务
+	tx := mic.db.Begin()
+
+	// 1. 查询所有要出售的物品
+	var myItems []models.MyItem
+	if err := tx.Preload("Treasure").Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, request.UserID, "treasure").Find(&myItems).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询物品失败: "+err.Error())
+		return
+	}
+
+	if len(myItems) == 0 {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusNotFound, "未找到要出售的宝物")
+		return
+	}
+
+	// 2. 计算总出售价格
+	totalPrice := 0
+	var soldItems []gin.H
+
+	for _, item := range myItems {
+		sellPrice := item.SellPrice
+		if sellPrice == 0 && item.Treasure != nil {
+			sellPrice = item.Treasure.Value
+		}
+		totalPrice += sellPrice
+
+		soldItems = append(soldItems, gin.H{
+			"id":         item.ID,
+			"item_name":  item.Treasure.Name,
+			"item_value": item.Treasure.Value,
+			"sold_price": sellPrice,
+		})
+	}
+
+	// 3. 更新用户金币
+	var user models.User
+	if err := tx.First(&user, request.UserID).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusNotFound, "用户不存在")
+		return
+	}
+
+	newGold := user.Gold + totalPrice
+	if err := tx.Model(&user).Update("gold", newGold).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "更新金币失败: "+err.Error())
+		return
+	}
+
+	// 4. 删除所有出售的物品
+	if err := tx.Where("id IN (?)", request.MyItemIDs).Delete(&models.MyItem{}).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "出售失败: "+err.Error())
+		return
+	}
+
+	// 提交事务
+	tx.Commit()
+
+	// 返回结果
+	response := gin.H{
+		"message":      "批量出售成功",
+		"total_price":  totalPrice,
+		"current_gold": newGold,
+		"sold_count":   len(myItems),
+		"sold_items":   soldItems,
+	}
+
+	utils.SuccessResponse(c, response)
+}

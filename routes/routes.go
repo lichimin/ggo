@@ -87,6 +87,7 @@ func SetupRoutes() *gin.Engine {
 		protected.GET("/my-items", myItemController.GetMyItems)
 		protected.PUT("/my-items/:id", myItemController.UpdateMyItem)
 		protected.DELETE("/my-items/:id", myItemController.DeleteMyItem)
+		protected.POST("/my-items/sell-multiple", myItemController.SellMultipleTreasures) // 批量出售宝物
 	}
 
 	// 健康检查
