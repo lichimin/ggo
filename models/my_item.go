@@ -11,9 +11,14 @@ type MyItem struct {
 	IsActive  bool   `json:"is_active" gorm:"default:true"`              // 是否激活
 	CreatedAt int64  `json:"created_at" gorm:"autoCreateTime"`           // 创建时间
 	UpdatedAt int64  `json:"updated_at" gorm:"autoUpdateTime"`           // 更新时间
+}
 
-	// 关联信息
-	User     User      `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Treasure *Treasure `json:"treasure,omitempty" gorm:"-"`
-	// 可以添加其他物品类型的关联
+// TreasureInfo 用于返回物品的详细信息
+type TreasureInfo struct {
+	ID          uint   `json:"id"`
+	Name        string `json:"name"`
+	ImageURL    string `json:"image_url"`
+	Value       int    `json:"value"`
+	Level       int    `json:"level"`
+	Description string `json:"description"`
 }

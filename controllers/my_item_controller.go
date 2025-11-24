@@ -42,6 +42,7 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 	}
 
 	// 根据物品类型验证物品是否存在
+	var itemName string
 	switch request.ItemType {
 	case "treasure":
 		var treasure models.Treasure
@@ -49,6 +50,7 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 			utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在")
 			return
 		}
+		itemName = treasure.Name
 	case "equipment":
 		// 这里可以添加装备的验证逻辑
 		// var equipment models.Equipment
@@ -56,6 +58,8 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 		// 	utils.ErrorResponse(c, http.StatusNotFound, "装备不存在")
 		// 	return
 		// }
+		// itemName = equipment.Name
+		itemName = "装备" // 临时占位
 	default:
 		utils.ErrorResponse(c, http.StatusBadRequest, "不支持的物品类型")
 		return
@@ -77,13 +81,21 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 		return
 	}
 
-	// 加载关联的物品信息
-	mic.loadItemDetails(&myItem)
+	// 创建响应结构，包含物品详细信息
+	type MyItemResponse struct {
+		models.MyItem
+		ItemName string `json:"item_name"`
+	}
 
-	utils.SuccessResponse(c, myItem)
+	response := MyItemResponse{
+		MyItem:   myItem,
+		ItemName: itemName,
+	}
+
+	utils.SuccessResponse(c, response)
 }
 
-// GetMyItems 查询我的物品
+// 修复 GetMyItems 方法中的 loadItemDetails
 func (mic *MyItemController) GetMyItems(c *gin.Context) {
 	userID, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil {
@@ -91,9 +103,8 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		return
 	}
 
-	position := c.Query("position") // backpack, warehouse, equipped
+	position := c.Query("position")
 
-	// 构建查询条件
 	query := mic.db.Where("user_id = ?", userID)
 	if position != "" {
 		query = query.Where("position = ?", position)
@@ -106,108 +117,48 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		return
 	}
 
-	// 加载每个物品的详细信息
-	for i := range myItems {
-		mic.loadItemDetails(&myItems[i])
+	// 创建响应结构，包含物品详细信息
+	type MyItemResponse struct {
+		models.MyItem
+		Treasure *models.Treasure `json:"treasure,omitempty"`
 	}
 
-	utils.SuccessResponse(c, myItems)
-}
+	var responseItems []MyItemResponse
 
-// loadItemDetails 加载物品详细信息
-func (mic *MyItemController) loadItemDetails(myItem *models.MyItem) {
-	switch myItem.ItemType {
-	case "treasure":
-		var treasure models.Treasure
-		if err := mic.db.First(&treasure, myItem.ItemID).Error; err == nil {
-			myItem.Treasure = &treasure
+	// 批量查询宝物信息
+	if len(myItems) > 0 {
+		var treasureIDs []uint
+		for _, item := range myItems {
+			if item.ItemType == "treasure" {
+				treasureIDs = append(treasureIDs, item.ItemID)
+			}
 		}
-	case "equipment":
-		// 这里可以加载装备信息
-		// var equipment models.Equipment
-		// if err := mic.db.First(&equipment, myItem.ItemID).Error; err == nil {
-		// 	myItem.Equipment = &equipment
-		// }
-	}
-}
 
-// UpdateMyItem 更新我的物品
-func (mic *MyItemController) UpdateMyItem(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "无效的ID")
-		return
-	}
+		var treasures []models.Treasure
+		if err := mic.db.Where("id IN (?)", treasureIDs).Find(&treasures).Error; err == nil {
+			treasureMap := make(map[uint]models.Treasure)
+			for _, treasure := range treasures {
+				treasureMap[treasure.ID] = treasure
+			}
 
-	var request struct {
-		SellPrice int    `json:"sell_price" binding:"min=0"`
-		Position  string `json:"position" binding:"oneof=backpack warehouse equipped"`
-		Quantity  int    `json:"quantity" binding:"min=1"`
+			for _, item := range myItems {
+				responseItem := MyItemResponse{MyItem: item}
+				if treasure, exists := treasureMap[item.ItemID]; exists {
+					responseItem.Treasure = &treasure
+				}
+				responseItems = append(responseItems, responseItem)
+			}
+		}
 	}
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "参数错误: "+err.Error())
-		return
-	}
-
-	var myItem models.MyItem
-	if err := mic.db.First(&myItem, id).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "物品不存在")
-		return
-	}
-
-	// 更新字段
-	updates := make(map[string]interface{})
-	if request.SellPrice >= 0 {
-		updates["sell_price"] = request.SellPrice
-	}
-	if request.Position != "" {
-		updates["position"] = request.Position
-	}
-	if request.Quantity > 0 {
-		updates["quantity"] = request.Quantity
-	}
-
-	result := mic.db.Model(&myItem).Updates(updates)
-	if result.Error != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "更新失败: "+result.Error.Error())
-		return
-	}
-
-	// 重新加载数据
-	mic.db.First(&myItem, id)
-	mic.loadItemDetails(&myItem)
-
-	utils.SuccessResponse(c, myItem)
-}
-
-// DeleteMyItem 删除我的物品
-func (mic *MyItemController) DeleteMyItem(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "无效的ID")
-		return
-	}
-
-	result := mic.db.Delete(&models.MyItem{}, id)
-	if result.Error != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "删除失败: "+result.Error.Error())
-		return
-	}
-
-	if result.RowsAffected == 0 {
-		utils.ErrorResponse(c, http.StatusNotFound, "物品不存在")
-		return
-	}
-
-	utils.SuccessResponse(c, gin.H{"message": "删除成功"})
+	utils.SuccessResponse(c, responseItems)
 }
 
 // SellMultipleTreasures 批量出售宝物
 func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 	var request struct {
 		UserID    uint   `json:"user_id" binding:"required"`
-		MyItemIDs []uint `json:"my_item_ids" binding:"required"` // 我的物品ID列表
+		MyItemIDs []uint `json:"my_item_ids" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -220,7 +171,7 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 
 	// 1. 查询所有要出售的物品
 	var myItems []models.MyItem
-	if err := tx.Preload("Treasure").Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, request.UserID, "treasure").Find(&myItems).Error; err != nil {
+	if err := tx.Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, request.UserID, "treasure").Find(&myItems).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "查询物品失败: "+err.Error())
 		return
@@ -232,26 +183,51 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
-	// 2. 计算总出售价格
+	// 2. 计算总出售价格和收集宝物ID
 	totalPrice := 0
 	var soldItems []gin.H
+	var treasureIDs []uint
 
 	for _, item := range myItems {
+		treasureIDs = append(treasureIDs, item.ItemID)
+	}
+
+	// 3. 批量查询宝物信息
+	var treasures []models.Treasure
+	if err := tx.Where("id IN (?)", treasureIDs).Find(&treasures).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询宝物信息失败: "+err.Error())
+		return
+	}
+
+	// 4. 创建宝物映射表
+	treasureMap := make(map[uint]models.Treasure)
+	for _, treasure := range treasures {
+		treasureMap[treasure.ID] = treasure
+	}
+
+	// 5. 计算总价格
+	for _, item := range myItems {
+		treasure, exists := treasureMap[item.ItemID]
+		if !exists {
+			continue
+		}
+
 		sellPrice := item.SellPrice
-		if sellPrice == 0 && item.Treasure != nil {
-			sellPrice = item.Treasure.Value
+		if sellPrice == 0 {
+			sellPrice = treasure.Value
 		}
 		totalPrice += sellPrice
 
 		soldItems = append(soldItems, gin.H{
 			"id":         item.ID,
-			"item_name":  item.Treasure.Name,
-			"item_value": item.Treasure.Value,
+			"item_name":  treasure.Name,
+			"item_value": treasure.Value,
 			"sold_price": sellPrice,
 		})
 	}
 
-	// 3. 更新用户金币
+	// 6. 更新用户金币
 	var user models.User
 	if err := tx.First(&user, request.UserID).Error; err != nil {
 		tx.Rollback()
@@ -266,7 +242,7 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
-	// 4. 删除所有出售的物品
+	// 7. 删除所有出售的物品
 	if err := tx.Where("id IN (?)", request.MyItemIDs).Delete(&models.MyItem{}).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "出售失败: "+err.Error())
