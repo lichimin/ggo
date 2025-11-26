@@ -30,6 +30,11 @@ func InitPostgres(dsn string) {
 		&models.Treasure{},
 		&models.MyItem{},
 		&models.HomeConfig{},
+		&models.EquipmentTemplate{},
+		&models.UserEquipment{},
+		&models.EquipmentAdditionalAttr{},
+		&models.Hero{},
+		&models.UserHero{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

@@ -1,0 +1,74 @@
+接口使用示例
+生成装备
+bash
+POST /api/v1/equipments/generate
+Authorization: Bearer your-token
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "treasure_ids": [1, 2, 3]
+}
+响应示例
+json
+{
+  "success": true,
+  "message": "success",
+  "data": {
+    "message": "装备生成成功",
+    "cost_gold": 30000,
+    "current_gold": 50000,
+    "equipment_level": 2,
+    "user_equipment": {
+      "id": 1,
+      "user_id": 1,
+      "equipment_id": 5,
+      "is_equipped": false,
+      "position": "backpack",
+      "created_at": 1700000000,
+      "updated_at": 1700000000,
+      "equipment_template": {
+        "id": 5,
+        "name": "稀有长剑",
+        "level": 2,
+        "slot": "weapon",
+        "hp": 0,
+        "attack": 15,
+        "attack_speed": 1.1,
+        "move_speed": 0,
+        "bullet_speed": 0,
+        "drain": 0,
+        "critical": 5,
+        "dodge": 0,
+        "instant_kill": 0,
+        "recovery": 0,
+        "trajectory": 0,
+        "image_url": "/images/rare_sword.png",
+        "description": "一把稀有的长剑",
+        "is_active": true,
+        "created_at": 1700000000,
+        "updated_at": 1700000000
+      }
+    },
+    "used_treasures": [
+      {
+        "id": 1,
+        "name": "普通宝石",
+        "level": 1,
+        "value": 100
+      },
+      {
+        "id": 2,
+        "name": "稀有宝石", 
+        "level": 2,
+        "value": 300
+      },
+      {
+        "id": 3,
+        "name": "普通戒指",
+        "level": 1,
+        "value": 150
+      }
+    ]
+  }
+}

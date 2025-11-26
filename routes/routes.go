@@ -25,6 +25,9 @@ func SetupRoutes() *gin.Engine {
 	treasureController := controllers.NewTreasureController(database.DB)
 	myItemController := controllers.NewMyItemController(database.DB)
 	homeConfigController := controllers.NewHomeConfigController(database.DB)
+	equipmentController := controllers.NewEquipmentController(database.DB)
+	equipmentEnhanceController := controllers.NewEquipmentEnhanceController(database.DB)
+	heroController := controllers.NewHeroController(database.DB)
 
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
@@ -86,6 +89,19 @@ func SetupRoutes() *gin.Engine {
 		protected.POST("/my-items", myItemController.AddMyItem)
 		protected.GET("/my-items", myItemController.GetMyItems)
 		protected.POST("/my-items/sell-multiple", myItemController.SellMultipleTreasures) // 批量出售宝物
+
+		// 装备相关
+		protected.POST("/equipments/generate", equipmentController.GenerateEquipment) // 生成装备
+		protected.GET("/equipments", equipmentController.GetUserEquipments)           // 获取用户装备列表
+		protected.PUT("/equipments/:id/equip", equipmentController.EquipEquipment)    // 装备/取消装备
+		// 装备强化相关
+		protected.POST("/equipments/merge", equipmentEnhanceController.MergeEquipment)     // 融合装备
+		protected.POST("/equipments/enhance", equipmentEnhanceController.EnhanceEquipment) // 强化装备
+
+		// 英雄相关
+		protected.POST("/heroes/draw", heroController.DrawHero)     // 抽取英雄（十连抽）
+		protected.POST("/heroes/awaken", heroController.AwakenHero) // 觉醒英雄
+		protected.GET("/heroes", heroController.GetUserHeroes)      // 获取用户英雄列表
 	}
 
 	// 健康检查
