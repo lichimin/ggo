@@ -100,7 +100,7 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 	utils.SuccessResponse(c, responses)
 }
 
-// GetMyItems 获取我的物品列表
+// GetMyItems 获取我的物品列表（装备、皮肤、宝物）
 func (mic *MyItemController) GetMyItems(c *gin.Context) {
 	// 从context中获取用户ID
 	userID, exists := c.Get("userID")
@@ -109,52 +109,87 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		return
 	}
 
-	// 获取position参数，默认为backpack
-	position := c.DefaultQuery("position", "backpack")
+	// 获取type参数，默认为空字符串（查询所有类型）
+	itemType := c.DefaultQuery("type", "")
 
-	// 构建查询，使用从context获取的userID
-	query := mic.db.Where("user_id = ?", userID.(uint))
-
-	// 如果position参数存在且不为空，则添加position过滤
-	if position != "" {
-		query = query.Where("position = ?", position)
+	// 创建统一的响应结构
+	type ItemResponse struct {
+		ID        uint                  `json:"id"`
+		Type      string                `json:"type"` // treasure, equipment, skin
+		ItemID    uint                  `json:"item_id"`
+		Treasure  *models.Treasure      `json:"treasure,omitempty"`
+		Equipment *models.UserEquipment `json:"equipment,omitempty"`
+		Skin      *models.UserSkin      `json:"skin,omitempty"`
+		Position  string                `json:"position,omitempty"`
+		Quantity  int                   `json:"quantity,omitempty"`
 	}
 
-	var myItems []models.MyItem
-	result := query.Find(&myItems)
-	if result.Error != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "查询失败: "+result.Error.Error())
-		return
-	}
+	var responseItems []ItemResponse
 
-	// 创建响应结构，包含物品详细信息
-	type MyItemResponse struct {
-		models.MyItem
-		Treasure *models.Treasure `json:"treasure,omitempty"`
-	}
+	// 查询宝物
+	if itemType == "" || itemType == "treasure" {
+		var treasures []models.MyItem
+		query := mic.db.Where("user_id = ? AND item_type = ?", userID.(uint), "treasure")
+		if err := query.Find(&treasures).Error; err == nil && len(treasures) > 0 {
+			// 批量查询宝物详细信息
+			var treasureIDs []uint
+			for _, t := range treasures {
+				treasureIDs = append(treasureIDs, t.ItemID)
+			}
 
-	var responseItems []MyItemResponse
+			var treasureDetails []models.Treasure
+			if err := mic.db.Where("id IN (?)", treasureIDs).Find(&treasureDetails).Error; err == nil {
+				treasureMap := make(map[uint]models.Treasure)
+				for _, td := range treasureDetails {
+					treasureMap[td.ID] = td
+				}
 
-	// 批量查询宝物信息
-	if len(myItems) > 0 {
-		var treasureIDs []uint
-		for _, item := range myItems {
-			if item.ItemType == "treasure" {
-				treasureIDs = append(treasureIDs, item.ItemID)
+				for _, t := range treasures {
+					responseItem := ItemResponse{
+						ID:       t.ID,
+						Type:     "treasure",
+						ItemID:   t.ItemID,
+						Position: t.Position,
+						Quantity: t.Quantity,
+					}
+					if td, exists := treasureMap[t.ItemID]; exists {
+						responseItem.Treasure = &td
+					}
+					responseItems = append(responseItems, responseItem)
+				}
 			}
 		}
+	}
 
-		var treasures []models.Treasure
-		if err := mic.db.Where("id IN (?)", treasureIDs).Find(&treasures).Error; err == nil {
-			treasureMap := make(map[uint]models.Treasure)
-			for _, treasure := range treasures {
-				treasureMap[treasure.ID] = treasure
+	// 查询装备
+	if itemType == "" || itemType == "equipment" {
+		var equipments []models.UserEquipment
+		query := mic.db.Where("user_id = ?", userID.(uint)).Preload("EquipmentTemplate").Preload("AdditionalAttrs")
+		if err := query.Find(&equipments).Error; err == nil {
+			for _, eq := range equipments {
+				responseItem := ItemResponse{
+					ID:        eq.ID,
+					Type:      "equipment",
+					ItemID:    eq.EquipmentID,
+					Position:  eq.Position,
+					Equipment: &eq,
+				}
+				responseItems = append(responseItems, responseItem)
 			}
+		}
+	}
 
-			for _, item := range myItems {
-				responseItem := MyItemResponse{MyItem: item}
-				if treasure, exists := treasureMap[item.ItemID]; exists {
-					responseItem.Treasure = &treasure
+	// 查询皮肤
+	if itemType == "" || itemType == "skin" {
+		var skins []models.UserSkin
+		query := mic.db.Where("user_id = ?", userID.(uint)).Preload("Skin")
+		if err := query.Find(&skins).Error; err == nil {
+			for _, sk := range skins {
+				responseItem := ItemResponse{
+					ID:     sk.ID,
+					Type:   "skin",
+					ItemID: sk.SkinID,
+					Skin:   &sk,
 				}
 				responseItems = append(responseItems, responseItem)
 			}
