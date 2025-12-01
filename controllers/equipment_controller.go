@@ -319,11 +319,15 @@ func (ec *EquipmentController) EquipItem(c *gin.Context) {
 	slot := userEquipment.EquipmentTemplate.Slot
 
 	// 5. 卸下用户在同一Slot上已穿戴的其他装备
-	if err := tx.Model(&models.UserEquipment{}).
+	// 即使没有找到需要卸下的装备，也不应报错，继续执行
+	result := tx.Model(&models.UserEquipment{}).
 		Where("user_id = ? AND is_equipped = ?", userID, true).
 		Joins("JOIN equipment_templates ON user_equipments.equipment_id = equipment_templates.id").
 		Where("equipment_templates.slot = ?", slot).
-		Update("is_equipped", false).Error; err != nil {
+		Update("is_equipped", false)
+
+	// 只有在数据库操作发生错误时才回滚，没有匹配记录不是错误
+	if result.Error != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "卸下同部位装备失败")
 		return
