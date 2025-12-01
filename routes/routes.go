@@ -73,7 +73,8 @@ func SetupRoutes() *gin.Engine {
 		// 装备相关
 		protected.POST("/equipments/generate", equipmentController.GenerateEquipment) // 生成装备
 		protected.GET("/equipments", equipmentController.GetUserEquipments)           // 获取用户装备列表
-		protected.PUT("/equipments/:id/equip", equipmentController.EquipItem)         // 装备/取消装备
+		protected.PUT("/equipments/:id/equip", equipmentController.EquipItem)         // 穿戴装备
+		protected.PUT("/equipments/:id/unequip", equipmentController.UnequipItem)     // 卸下装备
 		// 装备强化相关
 		protected.POST("/equipments/merge", equipmentEnhanceController.MergeEquipment)     // 融合装备
 		protected.POST("/equipments/enhance", equipmentEnhanceController.EnhanceEquipment) // 强化装备
