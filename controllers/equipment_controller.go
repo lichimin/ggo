@@ -5,7 +5,6 @@ import (
 	"ggo/utils"
 	"math/rand"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
@@ -49,7 +48,6 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	// 2. 验证宝物存在且属于该用户
 	var treasures []models.Treasure
 	var myItems []models.MyItem
-	var totalLevel int
 
 	for _, treasureID := range request.TreasureIDs {
 		var myItem models.MyItem
@@ -68,11 +66,10 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 
 		treasures = append(treasures, treasure)
 		myItems = append(myItems, myItem)
-		totalLevel += treasure.Level
 	}
 
-	// 3. 计算消耗金币
-	costGold := totalLevel * 10000
+	// 3. 固定消耗5万金币
+	costGold := 50000
 	if user.Gold < costGold {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusBadRequest, "金币不足")
@@ -95,8 +92,9 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 		}
 	}
 
-	// 6. 确定生成的装备等级
-	equipmentLevel := ec.determineEquipmentLevel(treasures)
+	// 6. 从三件宝物中随机选择一件的品级
+	randomIndex := rand.Intn(len(treasures))
+	equipmentLevel := treasures[randomIndex].Level
 
 	// 7. 随机选择对应等级的装备模板
 	var equipmentTemplate models.EquipmentTemplate
@@ -119,51 +117,120 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 		return
 	}
 
-	// 9. 提交事务
+	// 9. 处理附加属性
+	var newAttr *models.EquipmentAdditionalAttr
+	randomValue := rand.Float64()
+
+	if randomValue < 0.01 {
+		// 1% 概率添加稀有属性（七宗罪）
+		newAttr = ec.generateRareAttr(equipmentLevel)
+	} else if randomValue < 0.11 {
+		// 10% 概率添加普通属性
+		newAttr = ec.generateCommonAttr(equipmentLevel)
+	}
+
+	// 10. 保存附加属性
+	if newAttr != nil {
+		newAttr.UserEquipmentID = userEquipment.ID
+		if err := tx.Create(newAttr).Error; err != nil {
+			tx.Rollback()
+			utils.ErrorResponse(c, http.StatusInternalServerError, "创建附加属性失败")
+			return
+		}
+	}
+
+	// 11. 提交事务
 	tx.Commit()
 
-	// 10. 加载装备模板信息
-	ec.db.Preload("EquipmentTemplate").First(&userEquipment, userEquipment.ID)
+	// 12. 加载装备完整信息
+	ec.db.Preload("EquipmentTemplate").Preload("AdditionalAttrs").First(&userEquipment, userEquipment.ID)
 
-	// 11. 返回结果
+	// 13. 返回结果
 	response := gin.H{
-		"message":         "装备生成成功",
-		"cost_gold":       costGold,
-		"current_gold":    user.Gold - costGold,
-		"equipment_level": equipmentLevel,
-		"user_equipment":  userEquipment,
-		"used_treasures":  treasures,
+		"message":                 "装备打造成功",
+		"cost_gold":               costGold,
+		"current_gold":            user.Gold - costGold,
+		"equipment_level":         equipmentLevel,
+		"user_equipment":          userEquipment,
+		"used_treasures":          treasures,
+		"selected_treasure_index": randomIndex,
 	}
 
 	utils.SuccessResponse(c, response)
 }
 
-// determineEquipmentLevel 根据概率确定生成的装备等级
-func (ec *EquipmentController) determineEquipmentLevel(treasures []models.Treasure) int {
-	// 提取宝物等级
-	levels := make([]int, len(treasures))
-	for i, treasure := range treasures {
-		levels[i] = treasure.Level
+// generateCommonAttr 生成普通附加属性
+func (ec *EquipmentController) generateCommonAttr(level int) *models.EquipmentAdditionalAttr {
+	// 普通属性类型和范围
+	commonAttrs := []struct {
+		Type      string
+		Min, Max  float64
+		IsPercent bool
+	}{
+		{"attack_bonus", 1, 3, true},     // 攻击力加成1~3%
+		{"critical_rate", 1, 3, true},    // 暴击率1~3%
+		{"drain", 1, 3, true},            // 吸血1~3%
+		{"damage_reduction", 1, 3, true}, // 减伤1~3%
+		{"recovery", 20, 100, false},     // 自动回复20-100
+		{"attack_fixed", 10, 30, false},  // 攻击力+10~30
+		{"hp_bonus", 1, 5, true},         // 血量加成1%~5%
 	}
 
-	// 排序等级
-	sort.Ints(levels)
-	minLevel := levels[0]
-	maxLevel := levels[2]
-	midLevel := levels[1]
+	// 随机选择一个属性
+	attr := commonAttrs[rand.Intn(len(commonAttrs))]
+	value := attr.Min + rand.Float64()*(attr.Max-attr.Min)
 
-	// 根据概率随机选择
-	randomValue := rand.Float64()
-
-	if randomValue < 0.2 {
-		// 20% 概率生成最高等级装备
-		return maxLevel
-	} else if randomValue < 0.7 {
-		// 50% 概率生成最低等级装备
-		return minLevel
+	// 格式化属性值
+	var attrValue string
+	if attr.IsPercent {
+		attrValue = strconv.FormatFloat(value, 'f', 1, 64) + "%"
 	} else {
-		// 30% 概率生成中间等级装备
-		return midLevel
+		attrValue = strconv.Itoa(int(value))
+	}
+
+	return &models.EquipmentAdditionalAttr{
+		AttrType:  attr.Type,
+		AttrValue: attrValue,
+	}
+}
+
+// generateRareAttr 生成稀有附加属性（七宗罪）
+func (ec *EquipmentController) generateRareAttr(level int) *models.EquipmentAdditionalAttr {
+	// 稀有属性类型和范围
+	rareAttrs := []struct {
+		Type      string
+		Name      string
+		Min, Max  float64
+		IsPercent bool
+	}{
+		{"sloth", "傲慢", 5, 20, true},     // 最大HP提升5-20%
+		{"envy", "嫉妒", 10, 20, true},     // 暴击伤害提升10-20%
+		{"gluttony", "暴食", 10, 20, true}, // 攻速提升10-20%
+		{"greed", "贪婪", 1, 1, true},      // 攻击时1%几率秒杀
+		{"lust", "色欲", 100, 200, false},  // 自动回复100~200
+		{"wrath", "暴怒", 8, 10, true},     // 暴击率8~10%
+		{"pride", "怠惰", 5, 20, true},     // 攻击力提升5-20%
+	}
+
+	// 随机选择一个属性
+	attr := rareAttrs[rand.Intn(len(rareAttrs))]
+	value := attr.Min + rand.Float64()*(attr.Max-attr.Min)
+
+	// 格式化属性值
+	var attrValue string
+	if attr.IsPercent {
+		if attr.Type == "greed" {
+			attrValue = "秒杀1%"
+		} else {
+			attrValue = strconv.FormatFloat(value, 'f', 1, 64) + "%"
+		}
+	} else {
+		attrValue = strconv.Itoa(int(value))
+	}
+
+	return &models.EquipmentAdditionalAttr{
+		AttrType:  attr.Type,
+		AttrValue: attrValue,
 	}
 }
 
