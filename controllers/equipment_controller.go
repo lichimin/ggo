@@ -55,16 +55,18 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	var treasures []models.Treasure
 	var myItems []models.MyItem
 
-	for _, treasureID := range request.ItemIDs {
+	for _, myItemID := range request.ItemIDs {
+		// 先根据itemID找到MyItem记录
 		var myItem models.MyItem
-		if err := tx.Where("user_id = ? AND item_id = ? AND item_type = ?", userID.(uint), treasureID, "treasure").First(&myItem).Error; err != nil {
+		if err := tx.Where("id = ? AND user_id = ? AND item_type = ?", myItemID, userID.(uint), "treasure").First(&myItem).Error; err != nil {
 			tx.Rollback()
 			utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在或不属于该用户")
 			return
 		}
 
+		// 然后使用MyItem中的item_id作为treasureID搜索宝物信息
 		var treasure models.Treasure
-		if err := tx.First(&treasure, treasureID).Error; err != nil {
+		if err := tx.First(&treasure, myItem.ItemID).Error; err != nil {
 			tx.Rollback()
 			utils.ErrorResponse(c, http.StatusNotFound, "宝物信息不存在")
 			return
