@@ -27,14 +27,20 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 		return
 	}
 
-	// 简化的请求参数
-	var request struct {
+	// 支持物品数组的请求参数
+	type ItemRequest struct {
 		ItemID   uint `json:"item_id" binding:"required"`
 		Quantity int  `json:"quantity" binding:"min=1"`
 	}
+	var requests []ItemRequest
 
-	if err := c.ShouldBindJSON(&request); err != nil {
+	if err := c.ShouldBindJSON(&requests); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	if len(requests) == 0 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "物品列表不能为空")
 		return
 	}
 
@@ -50,41 +56,48 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 	position := "backpack" // 默认位置为背包
 	sellPrice := 0         // 默认售价为0
 
-	// 验证宝物是否存在
-	var treasure models.Treasure
-	if err := mic.db.First(&treasure, request.ItemID).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在")
-		return
-	}
-	itemName := treasure.Name
-
-	// 创建我的物品记录
-	myItem := models.MyItem{
-		UserID:    userID.(uint),
-		ItemID:    request.ItemID,
-		ItemType:  itemType,
-		SellPrice: sellPrice,
-		Position:  position,
-		Quantity:  request.Quantity,
-	}
-
-	if err := mic.db.Create(&myItem).Error; err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "添加物品失败: "+err.Error())
-		return
-	}
-
 	// 创建响应结构，包含物品详细信息
 	type MyItemResponse struct {
 		models.MyItem
 		ItemName string `json:"item_name"`
 	}
 
-	response := MyItemResponse{
-		MyItem:   myItem,
-		ItemName: itemName,
+	var responses []MyItemResponse
+
+	// 批量处理物品
+	for _, req := range requests {
+		// 验证宝物是否存在
+		var treasure models.Treasure
+		if err := mic.db.First(&treasure, req.ItemID).Error; err != nil {
+			utils.ErrorResponse(c, http.StatusNotFound, "宝物ID "+strconv.Itoa(int(req.ItemID))+" 不存在")
+			return
+		}
+		itemName := treasure.Name
+
+		// 创建我的物品记录
+		myItem := models.MyItem{
+			UserID:    userID.(uint),
+			ItemID:    req.ItemID,
+			ItemType:  itemType,
+			SellPrice: sellPrice,
+			Position:  position,
+			Quantity:  req.Quantity,
+		}
+
+		if err := mic.db.Create(&myItem).Error; err != nil {
+			utils.ErrorResponse(c, http.StatusInternalServerError, "添加物品失败: "+err.Error())
+			return
+		}
+
+		// 添加到响应列表
+		response := MyItemResponse{
+			MyItem:   myItem,
+			ItemName: itemName,
+		}
+		responses = append(responses, response)
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, responses)
 }
 
 // 修复 GetMyItems 方法中的 loadItemDetails
