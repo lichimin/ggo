@@ -187,3 +187,128 @@ func (uc *UserController) DeleteUser(c *gin.Context) {
 
 	utils.SuccessResponse(c, gin.H{"message": "用户删除成功"})
 }
+
+// GetPlayerAttributes 获取玩家属性（计算已穿戴装备和皮肤属性总和）
+func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "未授权")
+		return
+	}
+
+	// 定义属性汇总结构
+	attributes := gin.H{
+		"hp":              0,
+		"attack":          0,
+		"attack_speed":    1.0,
+		"move_speed":      0,
+		"bullet_speed":    0,
+		"drain":           0,
+		"critical":        0,
+		"dodge":           0,
+		"instant_kill":    0,
+		"recovery":        0,
+		"trajectory":      0,
+		"critical_rate":   0.0,
+		"critical_damage": 1.5,
+		"atk_type":        0,
+	}
+
+	// 查询用户已穿戴的装备
+	var equippedItems []models.UserEquipment
+	result := uc.userService.DB.Where("user_id = ? AND is_equipped = ?", userID.(uint), true).
+		Preload("EquipmentTemplate").
+		Preload("AdditionalAttrs").
+		Find(&equippedItems)
+	if result.Error != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询装备失败: "+result.Error.Error())
+		return
+	}
+
+	// 计算装备属性总和
+	for _, item := range equippedItems {
+		// 基础属性
+		attributes["hp"] = attributes["hp"].(int) + item.EquipmentTemplate.HP
+		attributes["attack"] = attributes["attack"].(int) + item.EquipmentTemplate.Attack
+		attributes["attack_speed"] = attributes["attack_speed"].(float64) + item.EquipmentTemplate.AttackSpeed
+		attributes["move_speed"] = attributes["move_speed"].(int) + item.EquipmentTemplate.MoveSpeed
+		attributes["bullet_speed"] = attributes["bullet_speed"].(int) + item.EquipmentTemplate.BulletSpeed
+		attributes["drain"] = attributes["drain"].(int) + item.EquipmentTemplate.Drain
+		attributes["critical"] = attributes["critical"].(int) + item.EquipmentTemplate.Critical
+		attributes["dodge"] = attributes["dodge"].(int) + item.EquipmentTemplate.Dodge
+		attributes["instant_kill"] = attributes["instant_kill"].(int) + item.EquipmentTemplate.InstantKill
+		attributes["recovery"] = attributes["recovery"].(int) + item.EquipmentTemplate.Recovery
+		attributes["trajectory"] = attributes["trajectory"].(int) + item.EquipmentTemplate.Trajectory
+
+		// 附加属性（根据AttrType进行累加）
+		for _, attr := range item.AdditionalAttrs {
+			// 将字符串属性值转换为数字
+			switch attr.AttrType {
+			case "hp":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["hp"] = attributes["hp"].(int) + val
+				}
+			case "attack":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["attack"] = attributes["attack"].(int) + val
+				}
+			case "attack_speed":
+				if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
+					attributes["attack_speed"] = attributes["attack_speed"].(float64) + val
+				}
+			case "move_speed":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["move_speed"] = attributes["move_speed"].(int) + val
+				}
+			case "bullet_speed":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["bullet_speed"] = attributes["bullet_speed"].(int) + val
+				}
+			case "drain":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["drain"] = attributes["drain"].(int) + val
+				}
+			case "critical":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["critical"] = attributes["critical"].(int) + val
+				}
+			case "dodge":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["dodge"] = attributes["dodge"].(int) + val
+				}
+			case "instant_kill":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["instant_kill"] = attributes["instant_kill"].(int) + val
+				}
+			case "recovery":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["recovery"] = attributes["recovery"].(int) + val
+				}
+			case "trajectory":
+				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+					attributes["trajectory"] = attributes["trajectory"].(int) + val
+				}
+				// enhance属性需要特殊处理，这里暂时忽略
+			}
+		}
+	}
+
+	// 查询用户已激活的皮肤
+	var activeSkin models.UserSkin
+	result = uc.userService.DB.Where("user_id = ? AND is_active = ?", userID.(uint), true).
+		Preload("Skin").
+		First(&activeSkin)
+	if result.Error == nil {
+		// 计算皮肤属性
+		attributes["hp"] = attributes["hp"].(int) + activeSkin.Skin.HP
+		attributes["attack"] = attributes["attack"].(int) + activeSkin.Skin.Attack
+		attributes["attack_speed"] = attributes["attack_speed"].(float64) + float64(activeSkin.Skin.AtkSpeed)
+		attributes["critical_rate"] = attributes["critical_rate"].(float64) + activeSkin.Skin.CriticalRate
+		attributes["critical_damage"] = attributes["critical_damage"].(float64) + activeSkin.Skin.CriticalDamage
+		if activeSkin.Skin.AtkType > 0 {
+			attributes["atk_type"] = activeSkin.Skin.AtkType
+		}
+	}
+
+	utils.SuccessResponse(c, attributes)
+}

@@ -5,6 +5,7 @@ type Skin struct {
 	Name            string   `json:"name" gorm:"size:100;not null"`      // 皮肤名称
 	Attack          int      `json:"attack" gorm:"default:0"`            // 攻击力
 	HP              int      `json:"hp" gorm:"default:0"`                // 血量
+	AtkType         int      `json:"atk_type" gorm:"default:0"`          // 攻击类型 1穿透  2散射 3反弹
 	AtkSpeed        int      `json:"atk_speed" gorm:"default:0"`         // 攻击速度
 	CriticalRate    float64  `json:"critical_rate" gorm:"default:0.0"`   // 暴击率 (0-1)
 	CriticalDamage  float64  `json:"critical_damage" gorm:"default:1.5"` // 暴击伤害 (倍数)

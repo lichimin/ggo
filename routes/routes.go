@@ -41,6 +41,7 @@ func SetupRoutes() *gin.Engine {
 	{
 		// 用户相关
 		protected.GET("/profile", userController.GetProfile)
+		protected.GET("/user/attributes", userController.GetPlayerAttributes) // 获取玩家属性
 		protected.GET("/users", userController.GetUsers)
 		protected.GET("/users/:id", userController.GetUser)
 		protected.POST("/users", userController.CreateUser)
