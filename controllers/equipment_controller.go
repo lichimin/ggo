@@ -129,10 +129,10 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	var newAttr *models.EquipmentAdditionalAttr
 	randomValue := rand.Float64()
 
-	if randomValue < 0.01 {
+	if randomValue < 0.5 {
 		// 1% 概率添加稀有属性（七宗罪）
 		newAttr = ec.generateRareAttr(equipmentLevel)
-	} else if randomValue < 0.11 {
+	} else if randomValue < 0.9 {
 		// 10% 概率添加普通属性
 		newAttr = ec.generateCommonAttr(equipmentLevel)
 	}
@@ -172,16 +172,17 @@ func (ec *EquipmentController) generateCommonAttr(level int) *models.EquipmentAd
 	// 普通属性类型和范围
 	commonAttrs := []struct {
 		Type      string
+		Name      string
 		Min, Max  float64
 		IsPercent bool
 	}{
-		{"attack_bonus", 1, 3, true},     // 攻击力加成1~3%
-		{"critical_rate", 1, 3, true},    // 暴击率1~3%
-		{"drain", 1, 3, true},            // 吸血1~3%
-		{"damage_reduction", 1, 3, true}, // 减伤1~3%
-		{"recovery", 20, 100, false},     // 自动回复20-100
-		{"attack_fixed", 10, 30, false},  // 攻击力+10~30
-		{"hp_bonus", 1, 5, true},         // 血量加成1%~5%
+		{"attack_bonus", "攻击力加成", 1, 3, true},  // 攻击力加成1~3%
+		{"critical_rate", "暴击率", 1, 3, true},   // 暴击率1~3%
+		{"drain", "吸血", 1, 3, true},            // 吸血1~3%
+		{"damage_reduction", "减伤", 1, 3, true}, // 减伤1~3%
+		{"recovery", "生命恢复", 20, 100, false},   // 自动回复20-100
+		{"attack_fixed", "攻击力", 10, 30, false}, // 攻击力+10~30
+		{"hp_bonus", "血量加成", 1, 5, true},       // 血量加成1%~5%
 	}
 
 	// 随机选择一个属性
@@ -198,6 +199,7 @@ func (ec *EquipmentController) generateCommonAttr(level int) *models.EquipmentAd
 
 	return &models.EquipmentAdditionalAttr{
 		AttrType:  attr.Type,
+		AttrName:  attr.Name, // 设置普通属性名称
 		AttrValue: attrValue,
 	}
 }
@@ -238,6 +240,7 @@ func (ec *EquipmentController) generateRareAttr(level int) *models.EquipmentAddi
 
 	return &models.EquipmentAdditionalAttr{
 		AttrType:  attr.Type,
+		AttrName:  attr.Name, // 设置稀有属性名称
 		AttrValue: attrValue,
 	}
 }

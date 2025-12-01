@@ -248,13 +248,18 @@ func (eec *EquipmentEnhanceController) generateAttrValue(attrType string, level 
 
 // EnhanceEquipment 强化装备
 func (eec *EquipmentEnhanceController) EnhanceEquipment(c *gin.Context) {
-	var request struct {
-		UserID      uint `json:"user_id" binding:"required"`
-		EquipmentID uint `json:"equipment_id" binding:"required"`
+	// 从JWT获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未登录")
+		return
 	}
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "参数错误: "+err.Error())
+	// 从URL获取装备ID
+	idStr := c.Param("id")
+	equipmentID, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "无效的装备ID")
 		return
 	}
 
@@ -263,7 +268,7 @@ func (eec *EquipmentEnhanceController) EnhanceEquipment(c *gin.Context) {
 
 	// 1. 验证装备存在且属于该用户
 	var equipment models.UserEquipment
-	if err := tx.Preload("EquipmentTemplate").First(&equipment, request.EquipmentID).Error; err != nil || equipment.UserID != request.UserID {
+	if err := tx.Preload("EquipmentTemplate").First(&equipment, equipmentID).Error; err != nil || equipment.UserID != userID.(uint) {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusNotFound, "装备不存在或不属于该用户")
 		return
@@ -271,7 +276,7 @@ func (eec *EquipmentEnhanceController) EnhanceEquipment(c *gin.Context) {
 
 	// 2. 验证用户存在
 	var user models.User
-	if err := tx.First(&user, request.UserID).Error; err != nil {
+	if err := tx.First(&user, userID).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusNotFound, "用户不存在")
 		return
