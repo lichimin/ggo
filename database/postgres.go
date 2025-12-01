@@ -24,8 +24,6 @@ func InitPostgres(dsn string) {
 		&models.Skin{},
 		&models.Monster{},
 		&models.UserSkin{},
-		&models.Bullet{},
-		&models.Skill{},
 		&models.Scene{},
 		&models.Treasure{},
 		&models.MyItem{},
@@ -33,8 +31,6 @@ func InitPostgres(dsn string) {
 		&models.EquipmentTemplate{},
 		&models.UserEquipment{},
 		&models.EquipmentAdditionalAttr{},
-		&models.Hero{},
-		&models.UserHero{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

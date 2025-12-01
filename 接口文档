@@ -1,74 +1,899 @@
-接口使用示例
-生成装备
-bash
-POST /api/v1/equipments/generate
-Authorization: Bearer your-token
-Content-Type: application/json
+# 游戏后端接口文档
 
+## 1. 文档概述
+本文档详细描述了游戏后端服务提供的所有API接口，包括接口路径、请求方法、参数说明、返回值格式等信息。
+
+## 2. 认证说明
+- 部分接口需要进行JWT认证，在请求头中需要携带Token：`Authorization: Bearer {token}`
+- 认证失败时，接口会返回401状态码
+
+## 3. 公开接口（无需认证）
+
+### 3.1 用户登录/注册
+```
+POST /api/v1/login
+```
+**请求体**：
+```json
+{
+  "username": "玩家名称",
+  "password": "密码"
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "username": "玩家名称",
+    "gold": 10000,
+    "level": 1
+  },
+  "token": "JWT令牌"
+}
+```
+
+### 3.2 获取场景列表
+```
+GET /api/v1/scenes
+```
+**查询参数**：
+- `name`: 场景名称（模糊查询）
+- `region`: 区域
+- `level`: 玩家等级（筛选等级不超过玩家等级的场景）
+- `is_active`: 是否启用（true/false）
+
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "新手村",
+      "region": "东部王国",
+      "level": 1,
+      "spawn_rate": 100,
+      "is_active": true
+    }
+  ]
+}
+```
+
+### 3.3 获取宝物列表
+```
+GET /api/v1/treasures
+```
+**查询参数**：
+- `name`: 宝物名称（模糊查询）
+- `level`: 玩家等级（筛选等级不超过玩家等级+1的宝物）
+- `is_active`: 是否启用（true/false）
+
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "青铜宝箱",
+      "level": 1,
+      "value": 1000,
+      "is_active": true
+    }
+  ]
+}
+```
+
+### 3.4 获取首页配置
+```
+GET /api/v1/home-configs
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "key": "banner_url",
+      "value": "https://example.com/banner1.jpg",
+      "type": "image"
+    }
+  ]
+}
+```
+
+### 3.5 健康检查
+```
+GET /health
+```
+**响应**：
+```json
+{
+  "status": "OK",
+  "message": "Service is running"
+}
+```
+
+## 4. 受保护接口（需要认证）
+
+### 4.1 用户相关接口
+
+#### 4.1.1 获取用户信息
+```
+GET /api/v1/profile
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "username": "玩家名称",
+    "gold": 10000,
+    "level": 1
+  }
+}
+```
+
+#### 4.1.2 获取用户列表（管理员功能）
+```
+GET /api/v1/users
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "username": "玩家1",
+      "gold": 10000,
+      "level": 1
+    }
+  ]
+}
+```
+
+#### 4.1.3 获取指定用户信息
+```
+GET /api/v1/users/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "username": "玩家名称",
+    "gold": 10000,
+    "level": 1
+  }
+}
+```
+
+#### 4.1.4 创建用户（管理员功能）
+```
+POST /api/v1/users
+```
+**请求体**：
+```json
+{
+  "username": "新玩家",
+  "password": "密码",
+  "gold": 10000,
+  "level": 1
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "username": "新玩家",
+    "gold": 10000,
+    "level": 1
+  }
+}
+```
+
+#### 4.1.5 更新用户信息
+```
+PUT /api/v1/users/:id
+```
+**请求体**：
+```json
+{
+  "username": "新名称",
+  "gold": 20000
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "username": "新名称",
+    "gold": 20000,
+    "level": 1
+  }
+}
+```
+
+#### 4.1.6 删除用户（管理员功能）
+```
+DELETE /api/v1/users/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "用户删除成功"
+  }
+}
+```
+
+### 4.2 皮肤相关接口
+
+#### 4.2.1 获取皮肤列表
+```
+GET /api/v1/skins
+```
+**查询参数**：
+- `name`: 皮肤名称（模糊查询）
+
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "默认皮肤",
+      "image_url": "https://example.com/skin1.jpg",
+      "price": 0
+    }
+  ]
+}
+```
+
+#### 4.2.2 获取皮肤详情
+```
+GET /api/v1/skins/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "默认皮肤",
+    "image_url": "https://example.com/skin1.jpg",
+    "price": 0
+  }
+}
+```
+
+#### 4.2.3 创建皮肤
+```
+POST /api/v1/skins
+```
+**请求体**：
+```json
+{
+  "name": "新皮肤",
+  "image_url": "https://example.com/skin2.jpg",
+  "price": 1000
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "name": "新皮肤",
+    "image_url": "https://example.com/skin2.jpg",
+    "price": 1000
+  }
+}
+```
+
+#### 4.2.4 更新皮肤
+```
+PUT /api/v1/skins/:id
+```
+**请求体**：
+```json
+{
+  "name": "更新的皮肤",
+  "price": 2000
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "name": "更新的皮肤",
+    "image_url": "https://example.com/skin2.jpg",
+    "price": 2000
+  }
+}
+```
+
+#### 4.2.5 删除皮肤
+```
+DELETE /api/v1/skins/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "删除成功"
+  }
+}
+```
+
+### 4.3 用户皮肤相关接口
+
+#### 4.3.1 获得皮肤
+```
+POST /api/v1/user/skins/acquire
+```
+**请求体**：
+```json
+{
+  "skin_id": 2
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "skin_id": 2,
+    "is_active": false,
+    "skin": {
+      "id": 2,
+      "name": "新皮肤",
+      "image_url": "https://example.com/skin2.jpg",
+      "price": 1000
+    }
+  }
+}
+```
+
+#### 4.3.2 获取用户拥有的皮肤列表
+```
+GET /api/v1/user/skins
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "skin_id": 1,
+      "is_active": true,
+      "skin": {
+        "id": 1,
+        "name": "默认皮肤",
+        "image_url": "https://example.com/skin1.jpg",
+        "price": 0
+      }
+    }
+  ]
+}
+```
+
+#### 4.3.3 启用皮肤
+```
+PUT /api/v1/user/skins/:skin_id/activate
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "皮肤启用成功"
+  }
+}
+```
+
+#### 4.3.4 获取用户当前启用的皮肤
+```
+GET /api/v1/user/skins/active
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "skin_id": 1,
+    "is_active": true,
+    "skin": {
+      "id": 1,
+      "name": "默认皮肤",
+      "image_url": "https://example.com/skin1.jpg",
+      "price": 0
+    }
+  }
+}
+```
+
+#### 4.3.5 删除用户皮肤
+```
+DELETE /api/v1/user/skins/:skin_id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "皮肤删除成功"
+  }
+}
+```
+
+### 4.4 怪物相关接口
+
+#### 4.4.1 获取怪物列表
+```
+GET /api/v1/monsters
+```
+**查询参数**：
+- `name`: 怪物名称（模糊查询）
+- `level`: 玩家等级（筛选等级不超过玩家等级的怪物）
+- `location`: 生成位置（模糊查询）
+- `is_active`: 是否启用（true/false）
+
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "史莱姆",
+      "level": 1,
+      "hp": 100,
+      "attack": 10,
+      "spawn_location": "新手村"
+    }
+  ]
+}
+```
+
+#### 4.4.2 获取怪物详情
+```
+GET /api/v1/monsters/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "史莱姆",
+    "level": 1,
+    "hp": 100,
+    "attack": 10,
+    "spawn_location": "新手村"
+  }
+}
+```
+
+#### 4.4.3 创建怪物
+```
+POST /api/v1/monsters
+```
+**请求体**：
+```json
+{
+  "name": "新怪物",
+  "level": 2,
+  "hp": 200,
+  "attack": 20,
+  "spawn_location": "森林"
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "name": "新怪物",
+    "level": 2,
+    "hp": 200,
+    "attack": 20,
+    "spawn_location": "森林"
+  }
+}
+```
+
+#### 4.4.4 更新怪物
+```
+PUT /api/v1/monsters/:id
+```
+**请求体**：
+```json
+{
+  "name": "更新的怪物",
+  "hp": 300
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "name": "更新的怪物",
+    "level": 2,
+    "hp": 300,
+    "attack": 20,
+    "spawn_location": "森林"
+  }
+}
+```
+
+#### 4.4.5 删除怪物
+```
+DELETE /api/v1/monsters/:id
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "删除成功"
+  }
+}
+```
+
+### 4.5 物品相关接口
+
+#### 4.5.1 添加物品
+```
+POST /api/v1/my-items
+```
+**请求体**：
+```json
+{
+  "item_id": 1,
+  "item_type": "treasure",
+  "quantity": 1
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "item_id": 1,
+    "item_type": "treasure",
+    "quantity": 1
+  }
+}
+```
+
+#### 4.5.2 获取用户物品列表
+```
+GET /api/v1/my-items
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "item_id": 1,
+      "item_type": "treasure",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+#### 4.5.3 批量出售宝物
+```
+POST /api/v1/my-items/sell-multiple
+```
+**请求体**：
+```json
+{
+  "item_ids": [1, 2, 3]
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "批量出售成功",
+    "total_gold": 3000
+  }
+}
+```
+
+### 4.6 装备相关接口
+
+#### 4.6.1 生成装备
+```
+POST /api/v1/equipments/generate
+```
+**请求体**：
+```json
 {
   "user_id": 1,
   "treasure_ids": [1, 2, 3]
 }
-响应示例
-json
+```
+**响应**：
+```json
 {
-  "success": true,
+  "code": 200,
   "message": "success",
   "data": {
     "message": "装备生成成功",
     "cost_gold": 30000,
-    "current_gold": 50000,
+    "current_gold": 70000,
     "equipment_level": 2,
     "user_equipment": {
       "id": 1,
       "user_id": 1,
-      "equipment_id": 5,
-      "is_equipped": false,
+      "equipment_id": 2,
       "position": "backpack",
-      "created_at": 1700000000,
-      "updated_at": 1700000000,
       "equipment_template": {
-        "id": 5,
-        "name": "稀有长剑",
+        "id": 2,
+        "name": "铁剑",
         "level": 2,
         "slot": "weapon",
-        "hp": 0,
-        "attack": 15,
-        "attack_speed": 1.1,
-        "move_speed": 0,
-        "bullet_speed": 0,
-        "drain": 0,
-        "critical": 5,
-        "dodge": 0,
-        "instant_kill": 0,
-        "recovery": 0,
-        "trajectory": 0,
-        "image_url": "/images/rare_sword.png",
-        "description": "一把稀有的长剑",
-        "is_active": true,
-        "created_at": 1700000000,
-        "updated_at": 1700000000
+        "base_attack": 20
       }
     },
-    "used_treasures": [
-      {
-        "id": 1,
-        "name": "普通宝石",
-        "level": 1,
-        "value": 100
-      },
-      {
-        "id": 2,
-        "name": "稀有宝石", 
-        "level": 2,
-        "value": 300
-      },
-      {
-        "id": 3,
-        "name": "普通戒指",
-        "level": 1,
-        "value": 150
-      }
-    ]
+    "used_treasures": [...]  // 使用的宝物列表
   }
 }
+```
+
+#### 4.6.2 获取用户装备列表
+```
+GET /api/v1/equipments
+```
+**查询参数**：
+- `position`: 位置（backpack/warehouse）
+- `is_equipped`: 是否装备（true/false）
+
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "equipment_id": 2,
+      "position": "backpack",
+      "is_equipped": false,
+      "enhance_level": 0,
+      "equipment_template": {
+        "id": 2,
+        "name": "铁剑",
+        "level": 2,
+        "slot": "weapon",
+        "base_attack": 20
+      }
+    }
+  ]
+}
+```
+
+#### 4.6.3 装备/取消装备
+```
+PUT /api/v1/equipments/:id/equip
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": 1,
+    "equipment_id": 2,
+    "position": "backpack",
+    "is_equipped": true,
+    "enhance_level": 0,
+    "equipment_template": {
+      "id": 2,
+      "name": "铁剑",
+      "level": 2,
+      "slot": "weapon",
+      "base_attack": 20
+    }
+  }
+}
+```
+
+#### 4.6.4 融合装备
+```
+POST /api/v1/equipments/merge
+```
+**请求体**：
+```json
+{
+  "user_id": 1,
+  "main_equipment_id": 1,
+  "material_equipment_id": 2
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "装备融合完成",
+    "success": true,
+    "new_attribute": {
+      "id": 1,
+      "user_equipment_id": 1,
+      "attr_type": "attack",
+      "attr_value": "5"
+    },
+    "main_equipment": {
+      "id": 1,
+      "user_id": 1,
+      "equipment_id": 2,
+      "position": "backpack",
+      "is_equipped": false,
+      "enhance_level": 0,
+      "equipment_template": {
+        "id": 2,
+        "name": "铁剑",
+        "level": 2,
+        "slot": "weapon",
+        "base_attack": 20
+      },
+      "additional_attrs": [
+        {
+          "id": 1,
+          "attr_type": "attack",
+          "attr_value": "5"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### 4.6.5 强化装备
+```
+POST /api/v1/equipments/enhance
+```
+**请求体**：
+```json
+{
+  "user_id": 1,
+  "equipment_id": 1
+}
+```
+**响应**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "message": "强化完成",
+    "success": true,
+    "cost_gold": 10000,
+    "current_gold": 60000,
+    "old_level": 0,
+    "new_level": 1,
+    "equipment": {
+      "id": 1,
+      "user_id": 1,
+      "equipment_id": 2,
+      "position": "backpack",
+      "is_equipped": false,
+      "enhance_level": 1,
+      "equipment_template": {
+        "id": 2,
+        "name": "铁剑",
+        "level": 2,
+        "slot": "weapon",
+        "base_attack": 20
+      }
+    }
+  }
+}
+```
+
+## 5. 错误码说明
+
+| 状态码 | 说明 |
+|-------|------|
+| 200 | 操作成功 |
+| 400 | 参数错误 |
+| 401 | 未授权 |
+| 403 | 禁止访问 |
+| 404 | 资源不存在 |
+| 500 | 服务器内部错误 |
+
+## 6. 响应格式统一规范
+
+### 6.1 成功响应
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": { /* 具体数据内容 */ }
+}
+```
+
+### 6.2 带Token的成功响应
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": { /* 具体数据内容 */ },
+  "token": "JWT令牌"
+}
+```
+
+### 6.3 错误响应
+```json
+{
+  "code": 400,
+  "message": "错误信息"
+}
+```
