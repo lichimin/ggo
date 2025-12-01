@@ -32,7 +32,7 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	}
 
 	var request struct {
-		ItemIDs []uint `json:"itemids" binding:"required,len=3"` // 3个宝物ID
+		ItemIDs []uint `json:"itemids" binding:"required,min=1,max=2"` // 1-2个宝物ID
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -51,7 +51,7 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 		return
 	}
 
-	// 2. 验证宝物存在且属于该用户
+	// 2. 验证宝物存在且属于该用户，并且数量大于0
 	var treasures []models.Treasure
 	var myItems []models.MyItem
 
@@ -61,6 +61,13 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 		if err := tx.Where("id = ? AND user_id = ? AND item_type = ?", myItemID, userID.(uint), "treasure").First(&myItem).Error; err != nil {
 			tx.Rollback()
 			utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在或不属于该用户")
+			return
+		}
+
+		// 检查宝物数量是否大于0
+		if myItem.Quantity <= 0 {
+			tx.Rollback()
+			utils.ErrorResponse(c, http.StatusBadRequest, "宝物数量不足")
 			return
 		}
 
@@ -91,16 +98,28 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 		return
 	}
 
-	// 5. 删除使用的宝物
+	// 5. 减少使用的宝物数量
 	for _, myItem := range myItems {
-		if err := tx.Delete(&myItem).Error; err != nil {
-			tx.Rollback()
-			utils.ErrorResponse(c, http.StatusInternalServerError, "删除宝物失败")
-			return
+		// 减少数量
+		myItem.Quantity--
+		if myItem.Quantity <= 0 {
+			// 数量为0时删除记录
+			if err := tx.Delete(&myItem).Error; err != nil {
+				tx.Rollback()
+				utils.ErrorResponse(c, http.StatusInternalServerError, "删除宝物失败")
+				return
+			}
+		} else {
+			// 数量不为0时更新数量
+			if err := tx.Save(&myItem).Error; err != nil {
+				tx.Rollback()
+				utils.ErrorResponse(c, http.StatusInternalServerError, "更新宝物数量失败")
+				return
+			}
 		}
 	}
 
-	// 6. 从三件宝物中随机选择一件的品级
+	// 6. 从提供的宝物中随机选择一件的品级
 	randomIndex := rand.Intn(len(treasures))
 	equipmentLevel := treasures[randomIndex].Level
 
