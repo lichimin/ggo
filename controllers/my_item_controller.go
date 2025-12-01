@@ -166,8 +166,15 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 
 // SellMultipleTreasures 批量出售宝物
 func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
+	// 从context中获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 简化的请求参数，只需要MyItemIDs
 	var request struct {
-		UserID    uint   `json:"user_id" binding:"required"`
 		MyItemIDs []uint `json:"my_item_ids" binding:"required"`
 	}
 
@@ -181,7 +188,7 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 
 	// 1. 查询所有要出售的物品
 	var myItems []models.MyItem
-	if err := tx.Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, request.UserID, "treasure").Find(&myItems).Error; err != nil {
+	if err := tx.Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, userID.(uint), "treasure").Find(&myItems).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "查询物品失败: "+err.Error())
 		return
@@ -239,7 +246,7 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 
 	// 6. 更新用户金币
 	var user models.User
-	if err := tx.First(&user, request.UserID).Error; err != nil {
+	if err := tx.First(&user, userID.(uint)).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusNotFound, "用户不存在")
 		return

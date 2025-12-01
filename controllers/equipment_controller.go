@@ -24,9 +24,15 @@ func NewEquipmentController(db *gorm.DB) *EquipmentController {
 
 // GenerateEquipment 生成装备
 func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
+	// 从context获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
 	var request struct {
-		UserID      uint   `json:"user_id" binding:"required"`
-		TreasureIDs []uint `json:"treasure_ids" binding:"required,len=3"` // 3个宝物ID
+		ItemIDs []uint `json:"itemids" binding:"required,len=3"` // 3个宝物ID
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -39,7 +45,7 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 
 	// 1. 验证用户存在
 	var user models.User
-	if err := tx.First(&user, request.UserID).Error; err != nil {
+	if err := tx.First(&user, userID.(uint)).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusNotFound, "用户不存在")
 		return
@@ -49,9 +55,9 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	var treasures []models.Treasure
 	var myItems []models.MyItem
 
-	for _, treasureID := range request.TreasureIDs {
+	for _, treasureID := range request.ItemIDs {
 		var myItem models.MyItem
-		if err := tx.Where("user_id = ? AND item_id = ? AND item_type = ?", request.UserID, treasureID, "treasure").First(&myItem).Error; err != nil {
+		if err := tx.Where("user_id = ? AND item_id = ? AND item_type = ?", userID.(uint), treasureID, "treasure").First(&myItem).Error; err != nil {
 			tx.Rollback()
 			utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在或不属于该用户")
 			return
@@ -106,7 +112,7 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 
 	// 8. 创建玩家装备记录
 	userEquipment := models.UserEquipment{
-		UserID:      request.UserID,
+		UserID:      userID.(uint),
 		EquipmentID: equipmentTemplate.ID,
 		Position:    "backpack",
 	}
