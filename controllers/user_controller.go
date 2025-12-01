@@ -242,7 +242,7 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 
 		// 附加属性（根据AttrType进行累加）
 		for _, attr := range item.AdditionalAttrs {
-			// 将字符串属性值转换为数字
+			// 处理普通附加属性
 			switch attr.AttrType {
 			case "hp":
 				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
@@ -288,7 +288,38 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
 					attributes["trajectory"] = attributes["trajectory"].(int) + val
 				}
-				// enhance属性需要特殊处理，这里暂时忽略
+			case "enhance":
+				// 处理特殊稀有属性，根据AttrName判断属性类型
+				switch attr.AttrName {
+				case "暴食": // 增加攻速
+					if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
+						attributes["attack_speed"] = attributes["attack_speed"].(float64) + val
+					}
+				case "贪婪": // 增加暴击
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["critical"] = attributes["critical"].(int) + val
+					}
+				case "懒惰": // 增加恢复
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["recovery"] = attributes["recovery"].(int) + val
+					}
+				case "傲慢": // 增加攻击力
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["attack"] = attributes["attack"].(int) + val
+					}
+				case "色欲": // 增加移动速度
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["move_speed"] = attributes["move_speed"].(int) + val
+					}
+				case "嫉妒": // 增加吸血
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["drain"] = attributes["drain"].(int) + val
+					}
+				case "暴怒": // 增加伤害
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attributes["attack"] = attributes["attack"].(int) + val
+					}
+				}
 			}
 		}
 	}
