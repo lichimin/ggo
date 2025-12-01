@@ -274,14 +274,16 @@ func (ec *EquipmentController) GetUserEquipments(c *gin.Context) {
 	utils.SuccessResponse(c, userEquipments)
 }
 
-// EquipEquipment 装备装备
-func (ec *EquipmentController) EquipEquipment(c *gin.Context) {
+// EquipItem 穿戴装备
+func (ec *EquipmentController) EquipItem(c *gin.Context) {
+	// 从context获取用户ID
 	userID, exists := c.Get("userID")
 	if !exists {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "未授权")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
 		return
 	}
 
+	// 获取装备ID参数
 	equipmentID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "无效的装备ID")
@@ -291,7 +293,7 @@ func (ec *EquipmentController) EquipEquipment(c *gin.Context) {
 	// 开始事务
 	tx := ec.db.Begin()
 
-	// 获取装备信息
+	// 1. 查询装备信息并预加载装备模板
 	var userEquipment models.UserEquipment
 	if err := tx.Preload("EquipmentTemplate").First(&userEquipment, equipmentID).Error; err != nil {
 		tx.Rollback()
@@ -299,47 +301,114 @@ func (ec *EquipmentController) EquipEquipment(c *gin.Context) {
 		return
 	}
 
-	// 验证装备属于该用户
+	// 2. 验证装备归属
 	if userEquipment.UserID != userID.(uint) {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusForbidden, "无权操作该装备")
 		return
 	}
 
-	// 如果已经装备，则取消装备
+	// 3. 如果装备已经穿戴，返回错误
 	if userEquipment.IsEquipped {
-		if err := tx.Model(&userEquipment).Update("is_equipped", false).Error; err != nil {
-			tx.Rollback()
-			utils.ErrorResponse(c, http.StatusInternalServerError, "取消装备失败")
-			return
-		}
-	} else {
-		// 先取消同部位的其他装备
-		var equipmentTemplate models.EquipmentTemplate
-		tx.First(&equipmentTemplate, userEquipment.EquipmentID)
-
-		if err := tx.Model(&models.UserEquipment{}).
-			Where("user_id = ? AND is_equipped = ?", userID, true).
-			Joins("JOIN equipment_templates ON user_equipments.equipment_id = equipment_templates.id").
-			Where("equipment_templates.slot = ?", equipmentTemplate.Slot).
-			Update("is_equipped", false).Error; err != nil {
-			tx.Rollback()
-			utils.ErrorResponse(c, http.StatusInternalServerError, "装备失败")
-			return
-		}
-
-		// 装备当前装备
-		if err := tx.Model(&userEquipment).Update("is_equipped", true).Error; err != nil {
-			tx.Rollback()
-			utils.ErrorResponse(c, http.StatusInternalServerError, "装备失败")
-			return
-		}
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusBadRequest, "该装备已经穿戴")
+		return
 	}
 
+	// 4. 获取装备的Slot信息
+	slot := userEquipment.EquipmentTemplate.Slot
+
+	// 5. 卸下用户在同一Slot上已穿戴的其他装备
+	if err := tx.Model(&models.UserEquipment{}).
+		Where("user_id = ? AND is_equipped = ?", userID, true).
+		Joins("JOIN equipment_templates ON user_equipments.equipment_id = equipment_templates.id").
+		Where("equipment_templates.slot = ?", slot).
+		Update("is_equipped", false).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "卸下同部位装备失败")
+		return
+	}
+
+	// 6. 更新当前装备为穿戴状态
+	if err := tx.Model(&userEquipment).Update("is_equipped", true).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "穿戴装备失败")
+		return
+	}
+
+	// 提交事务
 	tx.Commit()
 
-	// 重新加载数据
-	ec.db.Preload("EquipmentTemplate").First(&userEquipment, equipmentID)
+	// 重新加载装备信息
+	ec.db.Preload("EquipmentTemplate").Preload("AdditionalAttrs").First(&userEquipment, equipmentID)
 
-	utils.SuccessResponse(c, userEquipment)
+	// 返回成功响应
+	utils.SuccessResponse(c, gin.H{
+		"message":     "装备穿戴成功",
+		"equipment":   userEquipment,
+		"slot":        slot,
+		"is_equipped": true,
+	})
+}
+
+// UnequipItem 卸下装备
+func (ec *EquipmentController) UnequipItem(c *gin.Context) {
+	// 从context获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 获取装备ID参数
+	equipmentID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "无效的装备ID")
+		return
+	}
+
+	// 开始事务
+	tx := ec.db.Begin()
+
+	// 1. 查询装备信息
+	var userEquipment models.UserEquipment
+	if err := tx.Preload("EquipmentTemplate").First(&userEquipment, equipmentID).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusNotFound, "装备不存在")
+		return
+	}
+
+	// 2. 验证装备归属
+	if userEquipment.UserID != userID.(uint) {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusForbidden, "无权操作该装备")
+		return
+	}
+
+	// 3. 检查装备是否已穿戴
+	if !userEquipment.IsEquipped {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusBadRequest, "该装备未穿戴")
+		return
+	}
+
+	// 4. 更新装备为未穿戴状态
+	if err := tx.Model(&userEquipment).Update("is_equipped", false).Error; err != nil {
+		tx.Rollback()
+		utils.ErrorResponse(c, http.StatusInternalServerError, "卸下装备失败")
+		return
+	}
+
+	// 提交事务
+	tx.Commit()
+
+	// 重新加载装备信息
+	ec.db.Preload("EquipmentTemplate").Preload("AdditionalAttrs").First(&userEquipment, equipmentID)
+
+	// 返回成功响应
+	utils.SuccessResponse(c, gin.H{
+		"message":     "装备卸下成功",
+		"equipment":   userEquipment,
+		"is_equipped": false,
+	})
 }
