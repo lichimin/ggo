@@ -100,17 +100,22 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 	utils.SuccessResponse(c, responses)
 }
 
-// 修复 GetMyItems 方法中的 loadItemDetails
+// GetMyItems 获取我的物品列表
 func (mic *MyItemController) GetMyItems(c *gin.Context) {
-	userID, err := strconv.Atoi(c.Query("user_id"))
-	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "无效的用户ID")
+	// 从context中获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
 		return
 	}
 
-	position := c.Query("position")
+	// 获取position参数，默认为backpack
+	position := c.DefaultQuery("position", "backpack")
 
-	query := mic.db.Where("user_id = ?", userID)
+	// 构建查询，使用从context获取的userID
+	query := mic.db.Where("user_id = ?", userID.(uint))
+
+	// 如果position参数存在且不为空，则添加position过滤
 	if position != "" {
 		query = query.Where("position = ?", position)
 	}
