@@ -20,13 +20,17 @@ func NewMyItemController(db *gorm.DB) *MyItemController {
 
 // AddMyItem 添加我的物品
 func (mic *MyItemController) AddMyItem(c *gin.Context) {
+	// 从context中获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 简化的请求参数
 	var request struct {
-		UserID    uint   `json:"user_id" binding:"required"`
-		ItemID    uint   `json:"item_id" binding:"required"`
-		ItemType  string `json:"item_type" binding:"required,oneof=treasure equipment"`
-		SellPrice int    `json:"sell_price" binding:"min=0"`
-		Position  string `json:"position" binding:"required,oneof=backpack warehouse equipped"`
-		Quantity  int    `json:"quantity" binding:"min=1"`
+		ItemID   uint `json:"item_id" binding:"required"`
+		Quantity int  `json:"quantity" binding:"min=1"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -36,48 +40,36 @@ func (mic *MyItemController) AddMyItem(c *gin.Context) {
 
 	// 验证用户是否存在
 	var user models.User
-	if err := mic.db.First(&user, request.UserID).Error; err != nil {
+	if err := mic.db.First(&user, userID.(uint)).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusNotFound, "用户不存在")
 		return
 	}
 
-	// 根据物品类型验证物品是否存在
-	var itemName string
-	switch request.ItemType {
-	case "treasure":
-		var treasure models.Treasure
-		if err := mic.db.First(&treasure, request.ItemID).Error; err != nil {
-			utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在")
-			return
-		}
-		itemName = treasure.Name
-	case "equipment":
-		// 这里可以添加装备的验证逻辑
-		// var equipment models.Equipment
-		// if err := mic.db.First(&equipment, request.ItemID).Error; err != nil {
-		// 	utils.ErrorResponse(c, http.StatusNotFound, "装备不存在")
-		// 	return
-		// }
-		// itemName = equipment.Name
-		itemName = "装备" // 临时占位
-	default:
-		utils.ErrorResponse(c, http.StatusBadRequest, "不支持的物品类型")
+	// 设置默认值
+	itemType := "treasure" // 默认物品类型为宝物
+	position := "backpack" // 默认位置为背包
+	sellPrice := 0         // 默认售价为0
+
+	// 验证宝物是否存在
+	var treasure models.Treasure
+	if err := mic.db.First(&treasure, request.ItemID).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, "宝物不存在")
 		return
 	}
+	itemName := treasure.Name
 
 	// 创建我的物品记录
 	myItem := models.MyItem{
-		UserID:    request.UserID,
+		UserID:    userID.(uint),
 		ItemID:    request.ItemID,
-		ItemType:  request.ItemType,
-		SellPrice: request.SellPrice,
-		Position:  request.Position,
+		ItemType:  itemType,
+		SellPrice: sellPrice,
+		Position:  position,
 		Quantity:  request.Quantity,
 	}
 
-	result := mic.db.Create(&myItem)
-	if result.Error != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "添加物品失败: "+result.Error.Error())
+	if err := mic.db.Create(&myItem).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "添加物品失败: "+err.Error())
 		return
 	}
 
