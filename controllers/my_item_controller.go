@@ -161,10 +161,10 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		}
 	}
 
-	// 查询装备
+	// 查询装备（只查询未穿戴的装备）
 	if itemType == "" || itemType == "equipment" {
 		var equipments []models.UserEquipment
-		query := mic.db.Where("user_id = ?", userID.(uint)).Preload("EquipmentTemplate").Preload("AdditionalAttrs")
+		query := mic.db.Where("user_id = ? AND is_equipped = ?", userID.(uint), false).Preload("EquipmentTemplate").Preload("AdditionalAttrs")
 		if err := query.Find(&equipments).Error; err == nil {
 			for _, eq := range equipments {
 				responseItem := ItemResponse{
@@ -193,6 +193,48 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 				}
 				responseItems = append(responseItems, responseItem)
 			}
+		}
+	}
+
+	utils.SuccessResponse(c, responseItems)
+}
+
+// GetEquippedItems 获取已穿戴的装备列表
+func (mic *MyItemController) GetEquippedItems(c *gin.Context) {
+	// 从context中获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 创建统一的响应结构
+	type ItemResponse struct {
+		ID        uint                  `json:"id"`
+		Type      string                `json:"type"` // treasure, equipment, skin
+		ItemID    uint                  `json:"item_id"`
+		Treasure  *models.Treasure      `json:"treasure,omitempty"`
+		Equipment *models.UserEquipment `json:"equipment,omitempty"`
+		Skin      *models.UserSkin      `json:"skin,omitempty"`
+		Position  string                `json:"position,omitempty"`
+		Quantity  int                   `json:"quantity,omitempty"`
+	}
+
+	var responseItems []ItemResponse
+
+	// 查询已穿戴的装备
+	var equipments []models.UserEquipment
+	query := mic.db.Where("user_id = ? AND is_equipped = ?", userID.(uint), true).Preload("EquipmentTemplate").Preload("AdditionalAttrs")
+	if err := query.Find(&equipments).Error; err == nil {
+		for _, eq := range equipments {
+			responseItem := ItemResponse{
+				ID:        eq.ID,
+				Type:      "equipment",
+				ItemID:    eq.EquipmentID,
+				Position:  eq.Position,
+				Equipment: &eq,
+			}
+			responseItems = append(responseItems, responseItem)
 		}
 	}
 

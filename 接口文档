@@ -23,7 +23,7 @@ POST /api/v1/login
 **响应**：
 ```json
 {
-  "code": 200,
+  "success": true,
   "message": "success",
   "data": {
     "id": 1,
@@ -48,7 +48,7 @@ GET /api/v1/scenes
 **响应**：
 ```json
 {
-  "code": 200,
+  "success": true,
   "message": "success",
   "data": [
     {
@@ -75,7 +75,7 @@ GET /api/v1/treasures
 **响应**：
 ```json
 {
-  "code": 200,
+  "success": true,
   "message": "success",
   "data": [
     {
@@ -89,14 +89,194 @@ GET /api/v1/treasures
 }
 ```
 
-### 3.4 获取首页配置
+### 3.4 获取我的物品列表
+```
+GET /api/v1/my-items
+```
+**认证方式**：需要在请求头中携带Token
+```
+Authorization: Bearer {token}
+```
+**查询参数**：
+- `type`: 物品类型（可选，支持：treasure, equipment, skin，默认查询所有类型）
+- `position`: 位置（可选，用于筛选宝物的位置，如：backpack）
+
+**说明**：获取的装备仅包含未穿戴的装备（is_equipped=false）
+
+**响应**：
+```json
+{
+  "success": true,
+  "message": "success",
+  "data": [
+    {
+      "id": 18,
+      "type": "treasure",
+      "item_id": 5,
+      "treasure": {
+        "id": 5,
+        "name": "雪莲",
+        "image_url": "https://czrimg.godqb.com/game/bw/5-1.jpg",
+        "value": 150000,
+        "level": 5,
+        "is_active": true,
+        "description": "",
+        "created_at": 0,
+        "updated_at": 0
+      },
+      "position": "backpack",
+      "quantity": 10
+    },
+    {
+      "id": 20,
+      "type": "equipment",
+      "item_id": 3,
+      "equipment": {
+        "user_id": 1,
+        "equipment_id": 3,
+        "is_equipped": false,
+        "position": "inventory",
+        "created_at": 1725044234,
+        "updated_at": 1725044234,
+        "equipment_template": {
+          "id": 3,
+          "name": "高级弓箭",
+          "slot": "weapon",
+          "level": 3,
+          "hp": 0,
+          "attack": 50,
+          "attack_speed": 0.2,
+          "move_speed": 0,
+          "bullet_speed": 50,
+          "drain": 0,
+          "critical": 5,
+          "dodge": 0,
+          "instant_kill": 0,
+          "recovery": 0,
+          "trajectory": 1,
+          "price": 5000,
+          "is_active": true,
+          "created_at": 0,
+          "updated_at": 0
+        },
+        "additional_attrs": [
+          {
+            "id": 1,
+            "equipment_id": 3,
+            "attr_type": "attack",
+            "attr_name": "",
+            "attr_value": "20"
+          }
+        ]
+      },
+      "position": "inventory"
+    },
+    {
+      "id": 25,
+      "type": "skin",
+      "item_id": 2,
+      "skin": {
+        "user_id": 1,
+        "skin_id": 2,
+        "is_active": true,
+        "created_at": 1725044534,
+        "updated_at": 1725044534,
+        "skin": {
+          "id": 2,
+          "name": "火焰弓箭手",
+          "image_url": "https://example.com/skins/2.jpg",
+          "attack": 20,
+          "hp": 50,
+          "atk_speed": 5,
+          "attack_type": 2,
+          "critical_rate": 0.1,
+          "critical_damage": 1.5,
+          "price": 20000,
+          "is_active": true,
+          "created_at": 0,
+          "updated_at": 0
+        }
+      }
+    }
+  ]
+}
+```
+
+### 3.5 获取我的穿戴装备
+```
+GET /api/v1/my-items/equipped
+```
+**认证方式**：需要在请求头中携带Token
+```
+Authorization: Bearer {token}
+```
+**查询参数**：
+- 无
+
+**说明**：获取当前穿戴状态的装备
+
+**响应**：
+```json
+{
+  "success": true,
+  "message": "success",
+  "data": [
+    {
+      "id": 21,
+      "type": "equipment",
+      "item_id": 4,
+      "equipment": {
+        "user_id": 1,
+        "equipment_id": 4,
+        "is_equipped": true,
+        "position": "hero",
+        "created_at": 1725044234,
+        "updated_at": 1725044234,
+        "equipment_template": {
+          "id": 4,
+          "name": "传奇宝剑",
+          "slot": "weapon",
+          "level": 5,
+          "hp": 0,
+          "attack": 100,
+          "attack_speed": 0.5,
+          "move_speed": 0,
+          "bullet_speed": 80,
+          "drain": 0,
+          "critical": 15,
+          "dodge": 0,
+          "instant_kill": 0,
+          "recovery": 0,
+          "trajectory": 1,
+          "price": 15000,
+          "is_active": true,
+          "created_at": 0,
+          "updated_at": 0
+        },
+        "additional_attrs": [
+          {
+            "id": 2,
+            "equipment_id": 4,
+            "attr_type": "attack",
+            "attr_name": "",
+            "attr_value": "50"
+          }
+        ]
+      },
+      "position": "hero"
+    }
+  ]
+}
+```
+
+### 3.6 获取首页配置
 ```
 GET /api/v1/home-configs
 ```
 **响应**：
 ```json
 {
-  "code": 200,
+  "success": true,
   "message": "success",
   "data": [
     {
@@ -109,7 +289,7 @@ GET /api/v1/home-configs
 }
 ```
 
-### 3.5 健康检查
+### 3.7 健康检查
 ```
 GET /health
 ```
@@ -816,6 +996,108 @@ POST /api/v1/equipments/merge
 }
 ```
 
+### 4.7 装备参数说明
+
+#### 4.7.1 装备基本信息（UserEquipment）
+```json
+{
+  "id": 5,                             // 装备ID
+  "user_id": 2,                       // 用户ID
+  "equipment_id": 5,                  // 装备模板ID
+  "is_equipped": true,                // 是否装备中 (true/false)
+  "position": "backpack",            // 位置：backpack(背包), warehouse(仓库), equipped(装备中)
+  "enhance_level": 0,                 // 强化等级
+  "created_at": 1764583744,           // 创建时间戳
+  "updated_at": 1764583772,           // 更新时间戳
+  "equipment_template": {},           // 装备模板信息
+  "additional_attrs": []              // 附加属性列表
+}
+```
+
+#### 4.7.2 装备模板信息（EquipmentTemplate）
+```json
+{
+  "id": 5,                             // 模板ID
+  "name": "生锈的铁剑",                // 装备名称
+  "level": 1,                          // 品级：1-普通, 2-稀有, 3-史诗, 4-传说, 5-神话, 6-创世
+  "slot": "weapon",                   // 部位：weapon(武器), helmet(防具-头), chest(防具-胸), gloves(防具-护手), pants(防具-护腿), boots(防具-鞋子)
+  "hp": 0,                             // 生命值
+  "attack": 10,                        // 攻击力
+  "attack_speed": 10,                  // 攻速
+  "move_speed": 0,                     // 移速
+  "bullet_speed": 0,                   // 弹速
+  "drain": 0,                          // 吸血
+  "critical": 0,                       // 暴击
+  "dodge": 0,                          // 闪避
+  "instant_kill": 0,                   // 秒杀
+  "recovery": 0,                       // 恢复
+  "trajectory": 0,                     // 弹道
+  "image_url": "",                    // 装备图片
+  "description": "1",                 // 描述
+  "is_active": true,                   // 是否激活
+  "created_at": 0,                     // 创建时间戳
+  "updated_at": 0                      // 更新时间戳
+}
+```
+
+#### 4.7.3 附加属性信息（EquipmentAdditionalAttr）
+```json
+{
+  "id": 4,                             // 属性ID
+  "user_equipment_id": 5,              // 用户装备ID
+  "attr_type": "gluttony",            // 属性类型：
+  // hp - 生命值
+  // attack - 攻击力
+  // attack_speed - 攻击速度
+  // move_speed - 移动速度
+  // bullet_speed - 子弹速度
+  // drain - 吸血
+  // critical - 暴击
+  // dodge - 闪避
+  // instant_kill - 秒杀
+  // recovery - 生命恢复
+  // trajectory - 弹道数
+  // gluttony - 暴食(七宗罪)
+  // greed - 贪婪(七宗罪)
+  // sloth - 懒惰(七宗罪)
+  // pride - 傲慢(七宗罪)
+  // lust - 色欲(七宗罪)
+  // envy - 嫉妒(七宗罪)
+  // wrath - 暴怒(七宗罪)
+  "attr_name": "暴食",                // 属性名称（用于显示）
+  "attr_value": "17.1%",              // 属性值（字符串存储，可能是数字或百分比）
+  "created_at": 0,                     // 创建时间戳
+  "updated_at": 0                      // 更新时间戳
+}
+```
+
+#### 4.7.4 枚举类型说明
+
+| 枚举类型 | 枚举值 | 说明 |
+|---------|-------|------|
+| 装备部位 | weapon | 武器 |
+|  | helmet | 防具-头 |
+|  | chest | 防具-胸 |
+|  | gloves | 防具-护手 |
+|  | pants | 防具-护腿 |
+|  | boots | 防具-鞋子 |
+| 装备品级 | 1 | 普通 |
+|  | 2 | 稀有 |
+|  | 3 | 史诗 |
+|  | 4 | 传说 |
+|  | 5 | 神话 |
+|  | 6 | 创世 |
+| 装备位置 | backpack | 背包 |
+|  | warehouse | 仓库 |
+|  | equipped | 装备中 |
+| 七宗罪属性 | gluttony | 暴食 |
+|  | greed | 贪婪 |
+|  | sloth | 懒惰 |
+|  | pride | 傲慢 |
+|  | lust | 色欲 |
+|  | envy | 嫉妒 |
+|  | wrath | 暴怒 |
+
 #### 4.6.5 强化装备
 ```
 POST /api/v1/equipments/enhance
@@ -830,7 +1112,7 @@ POST /api/v1/equipments/enhance
 **响应**：
 ```json
 {
-  "code": 200,
+  "success": true,
   "message": "success",
   "data": {
     "message": "强化完成",

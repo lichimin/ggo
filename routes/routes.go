@@ -68,7 +68,8 @@ func SetupRoutes() *gin.Engine {
 
 		// 我的物品相关
 		protected.POST("/my-items", myItemController.AddMyItem)
-		protected.GET("/my-items", myItemController.GetMyItems)
+		protected.GET("/my-items", myItemController.GetMyItems) // 获取未穿戴的装备和其他物品
+		protected.GET("/my-items/equipped", myItemController.GetEquippedItems) // 获取已穿戴的装备
 		protected.POST("/my-items/sell-multiple", myItemController.SellMultipleTreasures) // 批量出售宝物
 
 		// 装备相关

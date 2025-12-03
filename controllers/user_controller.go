@@ -240,84 +240,105 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		attributes["recovery"] = attributes["recovery"].(int) + item.EquipmentTemplate.Recovery
 		attributes["trajectory"] = attributes["trajectory"].(int) + item.EquipmentTemplate.Trajectory
 
-		// 附加属性（根据AttrType进行累加）
+		// 附加属性处理
 		for _, attr := range item.AdditionalAttrs {
-			// 处理普通附加属性
-			switch attr.AttrType {
-			case "hp":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["hp"] = attributes["hp"].(int) + val
-				}
-			case "attack":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["attack"] = attributes["attack"].(int) + val
-				}
-			case "attack_speed":
-				if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
-					attributes["attack_speed"] = attributes["attack_speed"].(float64) + val
-				}
-			case "move_speed":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["move_speed"] = attributes["move_speed"].(int) + val
-				}
-			case "bullet_speed":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["bullet_speed"] = attributes["bullet_speed"].(int) + val
-				}
-			case "drain":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["drain"] = attributes["drain"].(int) + val
-				}
-			case "critical":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["critical"] = attributes["critical"].(int) + val
-				}
-			case "dodge":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["dodge"] = attributes["dodge"].(int) + val
-				}
-			case "instant_kill":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["instant_kill"] = attributes["instant_kill"].(int) + val
-				}
-			case "recovery":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["recovery"] = attributes["recovery"].(int) + val
-				}
-			case "trajectory":
-				if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-					attributes["trajectory"] = attributes["trajectory"].(int) + val
-				}
-			case "enhance":
-				// 处理特殊稀有属性，根据AttrName判断属性类型
+			// 处理enhance类型的特殊稀有属性
+			if attr.AttrType == "enhance" {
+				// 根据AttrName判断属性类型并累加
 				switch attr.AttrName {
 				case "暴食": // 增加攻速
 					if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
-						attributes["attack_speed"] = attributes["attack_speed"].(float64) + val
+						hpVal := attributes["attack_speed"].(float64) + val
+						attributes["attack_speed"] = hpVal
 					}
 				case "贪婪": // 增加暴击
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["critical"] = attributes["critical"].(int) + val
+						hpVal := attributes["critical"].(int) + val
+						attributes["critical"] = hpVal
 					}
 				case "懒惰": // 增加恢复
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["recovery"] = attributes["recovery"].(int) + val
+						hpVal := attributes["recovery"].(int) + val
+						attributes["recovery"] = hpVal
 					}
 				case "傲慢": // 增加攻击力
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["attack"] = attributes["attack"].(int) + val
+						hpVal := attributes["attack"].(int) + val
+						attributes["attack"] = hpVal
 					}
 				case "色欲": // 增加移动速度
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["move_speed"] = attributes["move_speed"].(int) + val
+						hpVal := attributes["move_speed"].(int) + val
+						attributes["move_speed"] = hpVal
 					}
 				case "嫉妒": // 增加吸血
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["drain"] = attributes["drain"].(int) + val
+						hpVal := attributes["drain"].(int) + val
+						attributes["drain"] = hpVal
 					}
 				case "暴怒": // 增加伤害
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						attributes["attack"] = attributes["attack"].(int) + val
+						hpVal := attributes["attack"].(int) + val
+						attributes["attack"] = hpVal
+					}
+				}
+			} else {
+				// 处理普通附加属性
+				switch attr.AttrType {
+				case "hp":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						hpVal := attributes["hp"].(int) + val
+						attributes["hp"] = hpVal
+					}
+				case "attack":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						attackVal := attributes["attack"].(int) + val
+						attributes["attack"] = attackVal
+					}
+				case "attack_speed":
+					if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
+						attackSpeedVal := attributes["attack_speed"].(float64) + val
+						attributes["attack_speed"] = attackSpeedVal
+					}
+				case "move_speed":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						moveSpeedVal := attributes["move_speed"].(int) + val
+						attributes["move_speed"] = moveSpeedVal
+					}
+				case "bullet_speed":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						bulletSpeedVal := attributes["bullet_speed"].(int) + val
+						attributes["bullet_speed"] = bulletSpeedVal
+					}
+				case "drain":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						drainVal := attributes["drain"].(int) + val
+						attributes["drain"] = drainVal
+					}
+				case "critical":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						criticalVal := attributes["critical"].(int) + val
+						attributes["critical"] = criticalVal
+					}
+				case "dodge":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						dodgeVal := attributes["dodge"].(int) + val
+						attributes["dodge"] = dodgeVal
+					}
+				case "instant_kill":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						instantKillVal := attributes["instant_kill"].(int) + val
+						attributes["instant_kill"] = instantKillVal
+					}
+				case "recovery":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						recoveryVal := attributes["recovery"].(int) + val
+						attributes["recovery"] = recoveryVal
+					}
+				case "trajectory":
+					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
+						trajectoryVal := attributes["trajectory"].(int) + val
+						attributes["trajectory"] = trajectoryVal
 					}
 				}
 			}
