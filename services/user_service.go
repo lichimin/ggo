@@ -61,6 +61,18 @@ func (s *UserService) register(req *models.UserLoginRequest) (*models.UserLoginR
 		return nil, "", result.Error
 	}
 
+	// 新用户默认绑定skinid=1的皮肤
+	userSkin := models.UserSkin{
+		UserID:   user.ID,
+		SkinID:   1,
+		IsActive: true, // 默认为激活状态
+	}
+
+	skinResult := s.DB.Create(&userSkin)
+	if skinResult.Error != nil {
+		return nil, "", skinResult.Error
+	}
+
 	// 生成token
 	token, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
