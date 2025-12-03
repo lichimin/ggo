@@ -251,9 +251,14 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
-	// 简化的请求参数，只需要MyItemIDs
+	// 请求参数支持每个物品的数量
+	type SellItemRequest struct {
+		MyItemID uint `json:"my_item_id" binding:"required"`
+		Quantity int  `json:"quantity" binding:"min=1"`
+	}
+
 	var request struct {
-		MyItemIDs []uint `json:"my_item_ids" binding:"required"`
+		Items []SellItemRequest `json:"items" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -261,12 +266,23 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
+	if len(request.Items) == 0 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "物品列表不能为空")
+		return
+	}
+
 	// 开始事务
 	tx := mic.db.Begin()
 
-	// 1. 查询所有要出售的物品
+	// 1. 提取所有物品ID
+	var allMyItemIDs []uint
+	for _, item := range request.Items {
+		allMyItemIDs = append(allMyItemIDs, item.MyItemID)
+	}
+
+	// 2. 查询所有要出售的物品
 	var myItems []models.MyItem
-	if err := tx.Where("id IN (?) AND user_id = ? AND item_type = ?", request.MyItemIDs, userID.(uint), "treasure").Find(&myItems).Error; err != nil {
+	if err := tx.Where("id IN (?) AND user_id = ? AND item_type = ?", allMyItemIDs, userID.(uint), "treasure").Find(&myItems).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "查询物品失败: "+err.Error())
 		return
@@ -278,16 +294,19 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
-	// 2. 计算总出售价格和收集宝物ID
-	totalPrice := 0
-	var soldItems []gin.H
-	var treasureIDs []uint
+	// 3. 创建物品ID到物品的映射
+	myItemMap := make(map[uint]models.MyItem)
+	for _, item := range myItems {
+		myItemMap[item.ID] = item
+	}
 
+	// 4. 收集宝物ID
+	var treasureIDs []uint
 	for _, item := range myItems {
 		treasureIDs = append(treasureIDs, item.ItemID)
 	}
 
-	// 3. 批量查询宝物信息
+	// 5. 批量查询宝物信息
 	var treasures []models.Treasure
 	if err := tx.Where("id IN (?)", treasureIDs).Find(&treasures).Error; err != nil {
 		tx.Rollback()
@@ -295,34 +314,83 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 		return
 	}
 
-	// 4. 创建宝物映射表
+	// 6. 创建宝物映射表
 	treasureMap := make(map[uint]models.Treasure)
 	for _, treasure := range treasures {
 		treasureMap[treasure.ID] = treasure
 	}
 
-	// 5. 计算总价格
-	for _, item := range myItems {
-		treasure, exists := treasureMap[item.ItemID]
+	// 7. 处理每个出售请求
+	totalPrice := 0
+	var soldItems []gin.H
+
+	for _, reqItem := range request.Items {
+		// 检查物品是否存在
+		myItem, exists := myItemMap[reqItem.MyItemID]
 		if !exists {
-			continue
+			tx.Rollback()
+			utils.ErrorResponse(c, http.StatusNotFound, "未找到ID为 "+strconv.Itoa(int(reqItem.MyItemID))+" 的宝物")
+			return
 		}
 
-		sellPrice := item.SellPrice
-		if sellPrice == 0 {
-			sellPrice = treasure.Value
+		// 检查宝物信息是否存在
+		treasure, exists := treasureMap[myItem.ItemID]
+		if !exists {
+			tx.Rollback()
+			utils.ErrorResponse(c, http.StatusNotFound, "未找到宝物信息")
+			return
 		}
-		totalPrice += sellPrice
 
+		// 确定出售数量（默认1）
+		sellQuantity := reqItem.Quantity
+		if sellQuantity <= 0 {
+			sellQuantity = 1
+		}
+
+		// 检查是否有足够的数量
+		if sellQuantity > myItem.Quantity {
+			tx.Rollback()
+			utils.ErrorResponse(c, http.StatusBadRequest, "ID为 "+strconv.Itoa(int(reqItem.MyItemID))+" 的宝物数量不足")
+			return
+		}
+
+		// 计算该物品的出售价格
+		itemSellPrice := myItem.SellPrice
+		if itemSellPrice == 0 {
+			itemSellPrice = treasure.Value
+		}
+		itemTotalPrice := itemSellPrice * sellQuantity
+		totalPrice += itemTotalPrice
+
+		// 记录出售的物品信息
 		soldItems = append(soldItems, gin.H{
-			"id":         item.ID,
-			"item_name":  treasure.Name,
-			"item_value": treasure.Value,
-			"sold_price": sellPrice,
+			"id":            myItem.ID,
+			"item_name":     treasure.Name,
+			"item_value":    treasure.Value,
+			"sell_quantity": sellQuantity,
+			"sold_price":    itemTotalPrice,
 		})
+
+		// 更新或删除物品
+		if sellQuantity == myItem.Quantity {
+			// 数量相等，删除物品
+			if err := tx.Delete(&models.MyItem{}, myItem.ID).Error; err != nil {
+				tx.Rollback()
+				utils.ErrorResponse(c, http.StatusInternalServerError, "出售物品失败: "+err.Error())
+				return
+			}
+		} else {
+			// 数量不等，更新数量
+			newQuantity := myItem.Quantity - sellQuantity
+			if err := tx.Model(&models.MyItem{}).Where("id = ?", myItem.ID).Update("quantity", newQuantity).Error; err != nil {
+				tx.Rollback()
+				utils.ErrorResponse(c, http.StatusInternalServerError, "更新物品数量失败: "+err.Error())
+				return
+			}
+		}
 	}
 
-	// 6. 更新用户金币
+	// 8. 更新用户金币
 	var user models.User
 	if err := tx.First(&user, userID.(uint)).Error; err != nil {
 		tx.Rollback()
@@ -334,13 +402,6 @@ func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 	if err := tx.Model(&user).Update("gold", newGold).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "更新金币失败: "+err.Error())
-		return
-	}
-
-	// 7. 删除所有出售的物品
-	if err := tx.Where("id IN (?)", request.MyItemIDs).Delete(&models.MyItem{}).Error; err != nil {
-		tx.Rollback()
-		utils.ErrorResponse(c, http.StatusInternalServerError, "出售失败: "+err.Error())
 		return
 	}
 

@@ -831,7 +831,11 @@ POST /api/v1/my-items/sell-multiple
 **请求体**：
 ```json
 {
-  "item_ids": [1, 2, 3]
+  "items": [
+    {"my_item_id": 1, "quantity": 2},
+    {"my_item_id": 2}, // 默认出售1个
+    {"my_item_id": 3, "quantity": 1}
+  ]
 }
 ```
 **响应**：
@@ -841,7 +845,32 @@ POST /api/v1/my-items/sell-multiple
   "message": "success",
   "data": {
     "message": "批量出售成功",
-    "total_gold": 3000
+    "total_price": 3000,
+    "current_gold": 15000,
+    "sold_count": 3,
+    "sold_items": [
+      {
+        "id": 1,
+        "item_name": "宝物名称",
+        "item_value": 1000,
+        "sell_quantity": 2,
+        "sold_price": 2000
+      },
+      {
+        "id": 2,
+        "item_name": "另一宝物",
+        "item_value": 500,
+        "sell_quantity": 1,
+        "sold_price": 500
+      },
+      {
+        "id": 3,
+        "item_name": "第三个宝物",
+        "item_value": 500,
+        "sell_quantity": 1,
+        "sold_price": 500
+      }
+    ]
   }
 }
 ```
