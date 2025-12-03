@@ -6,6 +6,7 @@ import (
 	"ggo/utils"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -244,42 +245,56 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		for _, attr := range item.AdditionalAttrs {
 			// 处理enhance类型的特殊稀有属性
 			if attr.AttrType == "enhance" {
+				// 清理属性值，去除百分号和其他非数字字符
+				cleanValue := attr.AttrValue
+				if strings.Contains(cleanValue, "%") {
+					cleanValue = strings.ReplaceAll(cleanValue, "%", "")
+				}
+				if strings.Contains(cleanValue, "秒杀") {
+					cleanValue = strings.ReplaceAll(cleanValue, "秒杀", "")
+				}
+
 				// 根据AttrName判断属性类型并累加
 				switch attr.AttrName {
 				case "暴食": // 增加攻速
-					if val, err := strconv.ParseFloat(attr.AttrValue, 64); err == nil {
-						hpVal := attributes["attack_speed"].(float64) + val
-						attributes["attack_speed"] = hpVal
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						// 转换为百分比数值
+						speedVal := attributes["attack_speed"].(float64) + (val / 100)
+						attributes["attack_speed"] = speedVal
 					}
-				case "贪婪": // 增加暴击
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["critical"].(int) + val
-						attributes["critical"] = hpVal
+				case "贪婪": // 增加秒杀几率
+					if val, err := strconv.Atoi(cleanValue); err == nil {
+						killVal := attributes["instant_kill"].(int) + val
+						attributes["instant_kill"] = killVal
 					}
-				case "懒惰": // 增加恢复
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["recovery"].(int) + val
-						attributes["recovery"] = hpVal
+				case "傲慢": // 增加最大HP
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						// 转换为百分比数值，基于当前HP值增加
+						hpVal := attributes["hp"].(int)
+						attributes["hp"] = hpVal + int(float64(hpVal)*val/100)
 					}
-				case "傲慢": // 增加攻击力
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["attack"].(int) + val
-						attributes["attack"] = hpVal
+				case "嫉妒": // 增加暴击伤害
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						// 转换为百分比数值
+						damageVal := attributes["critical_damage"].(float64) + (val / 100)
+						attributes["critical_damage"] = damageVal
 					}
-				case "色欲": // 增加移动速度
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["move_speed"].(int) + val
-						attributes["move_speed"] = hpVal
+				case "色欲": // 自动回复
+					if val, err := strconv.Atoi(cleanValue); err == nil {
+						recoveryVal := attributes["recovery"].(int) + val
+						attributes["recovery"] = recoveryVal
 					}
-				case "嫉妒": // 增加吸血
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["drain"].(int) + val
-						attributes["drain"] = hpVal
+				case "暴怒": // 增加暴击率
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						// 转换为百分比数值
+						rateVal := attributes["critical_rate"].(float64) + (val / 100)
+						attributes["critical_rate"] = rateVal
 					}
-				case "暴怒": // 增加伤害
-					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
-						hpVal := attributes["attack"].(int) + val
-						attributes["attack"] = hpVal
+				case "怠惰": // 增加攻击力
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						// 转换为百分比数值，基于当前攻击力增加
+						attackVal := attributes["attack"].(int)
+						attributes["attack"] = attackVal + int(float64(attackVal)*val/100)
 					}
 				}
 			} else {
