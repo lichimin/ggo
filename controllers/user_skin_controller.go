@@ -79,8 +79,23 @@ func (usc *UserSkinController) GetUserSkins(c *gin.Context) {
 
 	var userSkins []models.UserSkin
 
-	// 查询用户的所有皮肤，并预加载皮肤信息
-	result := usc.db.Preload("Skin").Where("user_id = ?", userID).Find(&userSkins)
+	// 构建查询
+	query := usc.db.Preload("Skin").Where("user_id = ?", userID)
+
+	// 获取is_active参数，支持查询已穿戴或全部皮肤
+	isActiveStr := c.Query("is_active")
+	if isActiveStr != "" {
+		isActive, err := strconv.ParseBool(isActiveStr)
+		if err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, "无效的is_active参数")
+			return
+		}
+		// 添加筛选条件
+		query = query.Where("is_active = ?", isActive)
+	}
+
+	// 执行查询
+	result := query.Find(&userSkins)
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "查询失败: "+result.Error.Error())
 		return

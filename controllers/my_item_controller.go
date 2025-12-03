@@ -182,7 +182,8 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 	// 查询皮肤
 	if itemType == "" || itemType == "skin" {
 		var skins []models.UserSkin
-		query := mic.db.Where("user_id = ?", userID.(uint)).Preload("Skin")
+		// 只查询未穿戴的皮肤（is_active = false）
+		query := mic.db.Where("user_id = ? AND is_active = ?", userID.(uint), false).Preload("Skin")
 		if err := query.Find(&skins).Error; err == nil {
 			for _, sk := range skins {
 				responseItem := ItemResponse{

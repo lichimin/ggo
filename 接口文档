@@ -101,7 +101,7 @@ Authorization: Bearer {token}
 - `type`: 物品类型（可选，支持：treasure, equipment, skin，默认查询所有类型）
 - `position`: 位置（可选，用于筛选宝物的位置，如：backpack）
 
-**说明**：获取的装备仅包含未穿戴的装备（is_equipped=false）
+**说明**：获取的装备仅包含未穿戴的装备（is_equipped=false），获取的皮肤仅包含未穿戴的皮肤（is_active=false）
 
 **响应**：
 ```json
@@ -573,6 +573,9 @@ POST /api/v1/user/skins/acquire
 ```
 GET /api/v1/user/skins
 ```
+**查询参数**：
+- `is_active`：可选，布尔值，true表示查询已穿戴的皮肤，false表示查询未穿戴的皮肤，不填则查询全部
+
 **响应**：
 ```json
 {
