@@ -9,6 +9,7 @@ type Skin struct {
 	AtkSpeed        int      `json:"atk_speed" gorm:"default:0"`                         // 攻击速度
 	CriticalRate    float64  `json:"critical_rate" gorm:"default:0.0"`                   // 暴击率 (0-1)
 	CriticalDamage  float64  `json:"critical_damage" gorm:"default:1.5"`                 // 暴击伤害 (倍数)
+	HpPos           float64  `json:"hp_pos" gorm:"default:0"`                            // 血条位置
 	Scale           int      `json:"scale" gorm:"default:100"`                           // 缩放比例 (默认100)
 	BackgroundURL   string   `json:"background_url" gorm:"size:500"`                     // 背景图片地址
 	IdleImageURLs   []string `json:"idle_image_urls" gorm:"type:json;serializer:json"`   // 待机图片（JSON格式多个图片）
