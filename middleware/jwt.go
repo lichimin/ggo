@@ -4,7 +4,6 @@ import (
 	"ggo/utils"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,14 +35,11 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		// 检查token是否即将过期（剩余时间小于30分钟），自动续签
-		remainingTime := time.Until(claims.ExpiresAt.Time)
-		if remainingTime < 30*time.Minute {
-			newToken, err := utils.RefreshToken(token)
-			if err == nil {
-				// 设置新的token到响应头
-				c.Header("X-New-Token", newToken)
-			}
+		// 每次请求都续签token
+		newToken, err := utils.RefreshToken(token)
+		if err == nil {
+			// 设置新的token到响应头
+			c.Header("X-New-Token", newToken)
 		}
 
 		// 将用户信息存入context
@@ -72,13 +68,10 @@ func OptionalJWTAuth() gin.HandlerFunc {
 				c.Set("userID", claims.UserID)
 				c.Set("username", claims.Username)
 
-				// 检查并刷新token
-				remainingTime := time.Until(claims.ExpiresAt.Time)
-				if remainingTime < 30*time.Minute {
-					newToken, err := utils.RefreshToken(token)
-					if err == nil {
-						c.Header("X-New-Token", newToken)
-					}
+				// 每次请求都续签token
+				newToken, err := utils.RefreshToken(token)
+				if err == nil {
+					c.Header("X-New-Token", newToken)
 				}
 			}
 		}
