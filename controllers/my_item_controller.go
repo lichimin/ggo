@@ -115,11 +115,10 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 	// 创建统一的响应结构
 	type ItemResponse struct {
 		ID        uint                  `json:"id"`
-		Type      string                `json:"type"` // treasure, equipment, skin
+		Type      string                `json:"type"` // treasure, equipment
 		ItemID    uint                  `json:"item_id"`
 		Treasure  *models.Treasure      `json:"treasure,omitempty"`
 		Equipment *models.UserEquipment `json:"equipment,omitempty"`
-		Skin      *models.UserSkin      `json:"skin,omitempty"`
 		Position  string                `json:"position,omitempty"`
 		Quantity  int                   `json:"quantity,omitempty"`
 	}
@@ -179,24 +178,6 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		}
 	}
 
-	// 查询皮肤
-	if itemType == "" || itemType == "skin" {
-		var skins []models.UserSkin
-		// 只查询未穿戴的皮肤（is_active = false）
-		query := mic.db.Where("user_id = ? AND is_active = ?", userID.(uint), false).Preload("Skin")
-		if err := query.Find(&skins).Error; err == nil {
-			for _, sk := range skins {
-				responseItem := ItemResponse{
-					ID:     sk.ID,
-					Type:   "skin",
-					ItemID: sk.SkinID,
-					Skin:   &sk,
-				}
-				responseItems = append(responseItems, responseItem)
-			}
-		}
-	}
-
 	utils.SuccessResponse(c, responseItems)
 }
 
@@ -212,11 +193,10 @@ func (mic *MyItemController) GetEquippedItems(c *gin.Context) {
 	// 创建统一的响应结构
 	type ItemResponse struct {
 		ID        uint                  `json:"id"`
-		Type      string                `json:"type"` // treasure, equipment, skin
+		Type      string                `json:"type"` // treasure, equipment
 		ItemID    uint                  `json:"item_id"`
 		Treasure  *models.Treasure      `json:"treasure,omitempty"`
 		Equipment *models.UserEquipment `json:"equipment,omitempty"`
-		Skin      *models.UserSkin      `json:"skin,omitempty"`
 		Position  string                `json:"position,omitempty"`
 		Quantity  int                   `json:"quantity,omitempty"`
 	}

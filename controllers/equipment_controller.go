@@ -355,8 +355,11 @@ func (ec *EquipmentController) EquipItem(c *gin.Context) {
 		return
 	}
 
-	// 6. 更新当前装备为穿戴状态
-	if err := tx.Model(&userEquipment).Update("is_equipped", true).Error; err != nil {
+	// 6. 更新当前装备为穿戴状态，并更新位置为"equipped"
+	if err := tx.Model(&userEquipment).Updates(map[string]interface{}{
+		"is_equipped": true,
+		"position":    "equipped",
+	}).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "穿戴装备失败")
 		return
@@ -418,8 +421,11 @@ func (ec *EquipmentController) UnequipItem(c *gin.Context) {
 		return
 	}
 
-	// 4. 更新装备为未穿戴状态
-	if err := tx.Model(&userEquipment).Update("is_equipped", false).Error; err != nil {
+	// 4. 更新装备为未穿戴状态，并更新位置为"backpack"
+	if err := tx.Model(&userEquipment).Updates(map[string]interface{}{
+		"is_equipped": false,
+		"position":    "backpack",
+	}).Error; err != nil {
 		tx.Rollback()
 		utils.ErrorResponse(c, http.StatusInternalServerError, "卸下装备失败")
 		return
