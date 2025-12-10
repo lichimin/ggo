@@ -32,7 +32,7 @@ func (ec *EquipmentController) GenerateEquipment(c *gin.Context) {
 	}
 
 	var request struct {
-		ItemIDs []uint `json:"itemids" binding:"required,min=1,max=2"` // 1-2个宝物ID
+		ItemIDs []uint `json:"itemids" binding:"required,min=3,max=3"` // 固定3个宝物ID，可以重复
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
