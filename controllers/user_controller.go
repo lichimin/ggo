@@ -406,27 +406,48 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		case "attack_speed":
 			formattedAttrs["攻击速度"] = value
 		case "move_speed":
-			formattedAttrs["移动速度"] = value
+			// 移动速度：显示为百分比
+			formattedAttrs["移动速度"] = fmt.Sprintf("%.1f%%", value.(int))
 		case "bullet_speed":
-			formattedAttrs["子弹速度"] = value
+			// 子弹速度：显示为百分比
+			formattedAttrs["子弹速度"] = fmt.Sprintf("%.1f%%", value.(int))
 		case "drain":
-			formattedAttrs["吸血"] = value
+			// 吸血：显示为百分比
+			formattedAttrs["吸血"] = fmt.Sprintf("%.1f%%", value.(int))
 		case "critical":
-			formattedAttrs["暴击值"] = value
+			// 暴击值：不显示
+			continue
 		case "dodge":
-			formattedAttrs["闪避"] = value
+			// 闪避：显示为百分比
+			formattedAttrs["闪避"] = fmt.Sprintf("%.1f%%", value.(int))
 		case "instant_kill":
-			formattedAttrs["秒杀"] = value
+			// 秒杀：显示为百分比
+			formattedAttrs["秒杀"] = fmt.Sprintf("%.1f%%", value.(int))
 		case "recovery":
 			formattedAttrs["恢复"] = value
 		case "trajectory":
-			formattedAttrs["弹道"] = value
+			// 弹道：在原基础上+1
+			formattedAttrs["弹道"] = value.(int) + 1
 		case "critical_rate":
-			formattedAttrs["暴击率"] = fmt.Sprintf("%.1f%%", value.(float64)*100) // 转换为百分比
+			// 暴击率：显示为百分比
+			formattedAttrs["暴击率"] = fmt.Sprintf("%.1f%%", value.(float64)*100)
 		case "critical_damage":
-			formattedAttrs["暴击伤害"] = fmt.Sprintf("%.1f倍", value.(float64))
+			// 暴击伤害：显示为百分比（原倍数×100）
+			formattedAttrs["暴击伤害"] = fmt.Sprintf("%.0f%%", value.(float64)*100)
 		case "atk_type":
-			formattedAttrs["攻击类型"] = value
+			// 攻击类型：转换为中文
+			atkType := "默认"
+			if atkVal, ok := value.(int); ok {
+				switch atkVal {
+				case 1:
+					atkType = "反弹"
+				case 2:
+					atkType = "穿透"
+				case 3:
+					atkType = "爆炸"
+				}
+			}
+			formattedAttrs["攻击类型"] = atkType
 		case "damage_reduction":
 			// 减伤属性：只显示数值和百分号
 			if drVal, ok := value.(float64); ok && drVal > 0 {
