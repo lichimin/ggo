@@ -357,13 +357,20 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 						attributes["trajectory"] = trajectoryVal
 					}
 				case "damage_reduction":
-					// 减伤属性特殊处理，暂时存储为字符串
-					if _, exists := attributes["damage_reduction"]; exists {
-						// 如果已经存在减伤属性，将两个字符串合并
-						currentDR := attributes["damage_reduction"].(string)
-						attributes["damage_reduction"] = currentDR + " + " + attr.AttrValue
-					} else {
-						attributes["damage_reduction"] = attr.AttrValue
+					// 减伤属性处理，计算总和
+					// 清理属性值，提取数字部分
+					cleanValue := attr.AttrValue
+					cleanValue = strings.ReplaceAll(cleanValue, "%", "")
+					if val, err := strconv.ParseFloat(cleanValue, 64); err == nil {
+						if currentDR, exists := attributes["damage_reduction"]; exists {
+							// 如果已经存在减伤属性，累加数值
+							if drFloat, ok := currentDR.(float64); ok {
+								attributes["damage_reduction"] = drFloat + val
+							}
+						} else {
+							// 第一次添加减伤属性
+							attributes["damage_reduction"] = val
+						}
 					}
 				}
 			}
