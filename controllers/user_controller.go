@@ -199,20 +199,21 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 
 	// 定义属性汇总结构
 	attributes := gin.H{
-		"hp":              0,
-		"attack":          0,
-		"attack_speed":    1.0,
-		"move_speed":      0,
-		"bullet_speed":    0,
-		"drain":           0,
-		"critical":        0,
-		"dodge":           0,
-		"instant_kill":    0,
-		"recovery":        0,
-		"trajectory":      0,
-		"critical_rate":   0.0,
-		"critical_damage": 1.5,
-		"atk_type":        0,
+		"hp":               0,
+		"attack":           0,
+		"attack_speed":     1.0,
+		"move_speed":       0,
+		"bullet_speed":     0,
+		"drain":            0,
+		"critical":         0,
+		"dodge":            0,
+		"instant_kill":     0,
+		"recovery":         0,
+		"trajectory":       0,
+		"critical_rate":    0.0,
+		"critical_damage":  1.5,
+		"atk_type":         0,
+		"damage_reduction": "", // 减伤属性
 	}
 
 	// 查询用户已穿戴的装备
@@ -354,6 +355,15 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 					if val, err := strconv.Atoi(attr.AttrValue); err == nil {
 						trajectoryVal := attributes["trajectory"].(int) + val
 						attributes["trajectory"] = trajectoryVal
+					}
+				case "damage_reduction":
+					// 减伤属性特殊处理，暂时存储为字符串
+					if _, exists := attributes["damage_reduction"]; exists {
+						// 如果已经存在减伤属性，将两个字符串合并
+						currentDR := attributes["damage_reduction"].(string)
+						attributes["damage_reduction"] = currentDR + " + " + attr.AttrValue
+					} else {
+						attributes["damage_reduction"] = attr.AttrValue
 					}
 				}
 			}

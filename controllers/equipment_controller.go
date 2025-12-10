@@ -437,10 +437,11 @@ func (ec *EquipmentController) UnequipItem(c *gin.Context) {
 	// 重新加载装备信息
 	ec.db.Preload("EquipmentTemplate").Preload("AdditionalAttrs").First(&userEquipment, equipmentID)
 
-	// 返回成功响应
+	// 返回成功响应，包含slot字段
 	utils.SuccessResponse(c, gin.H{
 		"message":     "装备卸下成功",
 		"equipment":   userEquipment,
+		"slot":        userEquipment.EquipmentTemplate.Slot,
 		"is_equipped": false,
 	})
 }

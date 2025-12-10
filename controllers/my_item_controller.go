@@ -121,6 +121,7 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 		Equipment *models.UserEquipment `json:"equipment,omitempty"`
 		Position  string                `json:"position,omitempty"`
 		Quantity  int                   `json:"quantity,omitempty"`
+		Slot      string                `json:"slot,omitempty"` // 装备部位
 	}
 
 	var responseItems []ItemResponse
@@ -172,6 +173,7 @@ func (mic *MyItemController) GetMyItems(c *gin.Context) {
 					ItemID:    eq.EquipmentID,
 					Position:  eq.Position,
 					Equipment: &eq,
+					Slot:      eq.EquipmentTemplate.Slot,
 				}
 				responseItems = append(responseItems, responseItem)
 			}
@@ -199,6 +201,7 @@ func (mic *MyItemController) GetEquippedItems(c *gin.Context) {
 		Equipment *models.UserEquipment `json:"equipment,omitempty"`
 		Position  string                `json:"position,omitempty"`
 		Quantity  int                   `json:"quantity,omitempty"`
+		Slot      string                `json:"slot,omitempty"` // 装备部位
 	}
 
 	var responseItems []ItemResponse
@@ -214,6 +217,7 @@ func (mic *MyItemController) GetEquippedItems(c *gin.Context) {
 				ItemID:    eq.EquipmentID,
 				Position:  eq.Position,
 				Equipment: &eq,
+				Slot:      eq.EquipmentTemplate.Slot,
 			}
 			responseItems = append(responseItems, responseItem)
 		}
