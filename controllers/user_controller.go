@@ -395,18 +395,43 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		}
 	}
 
-	// 格式化属性为中文显示
+	// 格式化所有属性为中文显示
 	formattedAttrs := gin.H{}
 	for key, value := range attributes {
 		switch key {
+		case "hp":
+			formattedAttrs["生命值"] = value
+		case "attack":
+			formattedAttrs["攻击力"] = value
+		case "attack_speed":
+			formattedAttrs["攻击速度"] = value
+		case "move_speed":
+			formattedAttrs["移动速度"] = value
+		case "bullet_speed":
+			formattedAttrs["子弹速度"] = value
+		case "drain":
+			formattedAttrs["吸血"] = value
+		case "critical":
+			formattedAttrs["暴击值"] = value
+		case "dodge":
+			formattedAttrs["闪避"] = value
+		case "instant_kill":
+			formattedAttrs["秒杀"] = value
+		case "recovery":
+			formattedAttrs["恢复"] = value
+		case "trajectory":
+			formattedAttrs["弹道"] = value
+		case "critical_rate":
+			formattedAttrs["暴击率"] = fmt.Sprintf("%.1f%%", value.(float64)*100) // 转换为百分比
+		case "critical_damage":
+			formattedAttrs["暴击伤害"] = fmt.Sprintf("%.1f倍", value.(float64))
+		case "atk_type":
+			formattedAttrs["攻击类型"] = value
 		case "damage_reduction":
 			// 减伤属性：只显示数值和百分号
 			if drVal, ok := value.(float64); ok && drVal > 0 {
 				formattedAttrs["减伤"] = fmt.Sprintf("%.1f%%", drVal)
 			}
-		default:
-			// 其他属性保持原类型
-			formattedAttrs[key] = value
 		}
 	}
 
