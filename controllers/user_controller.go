@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"ggo/models"
 	"ggo/services"
 	"ggo/utils"
@@ -213,7 +214,7 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		"critical_rate":    0.0,
 		"critical_damage":  1.5,
 		"atk_type":         0,
-		"damage_reduction": "", // 减伤属性
+		"damage_reduction": 0.0, // 减伤属性，初始为0.0
 	}
 
 	// 查询用户已穿戴的装备
@@ -394,5 +395,20 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 		}
 	}
 
-	utils.SuccessResponse(c, attributes)
+	// 格式化属性为中文显示
+	formattedAttrs := gin.H{}
+	for key, value := range attributes {
+		switch key {
+		case "damage_reduction":
+			// 减伤属性：只显示数值和百分号
+			if drVal, ok := value.(float64); ok && drVal > 0 {
+				formattedAttrs["减伤"] = fmt.Sprintf("%.1f%%", drVal)
+			}
+		default:
+			// 其他属性保持原类型
+			formattedAttrs[key] = value
+		}
+	}
+
+	utils.SuccessResponse(c, formattedAttrs)
 }
