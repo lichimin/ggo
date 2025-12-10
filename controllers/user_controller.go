@@ -407,22 +407,22 @@ func (uc *UserController) GetPlayerAttributes(c *gin.Context) {
 			formattedAttrs["攻击速度"] = value
 		case "move_speed":
 			// 移动速度：显示为百分比
-			formattedAttrs["移动速度"] = fmt.Sprintf("%.1f%%", value.(int))
+			formattedAttrs["移动速度"] = fmt.Sprintf("%.1f%%", float64(value.(int)))
 		case "bullet_speed":
 			// 子弹速度：显示为百分比
-			formattedAttrs["子弹速度"] = fmt.Sprintf("%.1f%%", value.(int))
+			formattedAttrs["子弹速度"] = fmt.Sprintf("%.1f%%", float64(value.(int)))
 		case "drain":
 			// 吸血：显示为百分比
-			formattedAttrs["吸血"] = fmt.Sprintf("%.1f%%", value.(int))
+			formattedAttrs["吸血"] = fmt.Sprintf("%.1f%%", float64(value.(int)))
 		case "critical":
 			// 暴击值：不显示
 			continue
 		case "dodge":
 			// 闪避：显示为百分比
-			formattedAttrs["闪避"] = fmt.Sprintf("%.1f%%", value.(int))
+			formattedAttrs["闪避"] = fmt.Sprintf("%.1f%%", float64(value.(int)))
 		case "instant_kill":
 			// 秒杀：显示为百分比
-			formattedAttrs["秒杀"] = fmt.Sprintf("%.1f%%", value.(int))
+			formattedAttrs["秒杀"] = fmt.Sprintf("%.1f%%", float64(value.(int)))
 		case "recovery":
 			formattedAttrs["恢复"] = value
 		case "trajectory":
