@@ -226,6 +226,79 @@ func (mic *MyItemController) GetEquippedItems(c *gin.Context) {
 	utils.SuccessResponse(c, responseItems)
 }
 
+// GetMyTreasures 获取我的宝物列表
+func (mic *MyItemController) GetMyTreasures(c *gin.Context) {
+	// 从context中获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 查询用户拥有的宝物
+	var myItems []models.MyItem
+	if err := mic.db.Where("user_id = ? AND item_type = ?", userID.(uint), "treasure").Find(&myItems).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询宝物失败: "+err.Error())
+		return
+	}
+
+	// 定义宝物响应结构
+	type TreasureResponse struct {
+		ID          uint              `json:"id"`
+		MyItemID    uint              `json:"my_item_id"` // 我的物品ID
+		Name        string            `json:"name"`
+		ImageURL    string            `json:"image_url"`
+		Level       int               `json:"level"`
+		Value       int               `json:"value"`
+		Quantity    int               `json:"quantity"`
+		Description string            `json:"description,omitempty"`
+	}
+
+	// 如果没有宝物，直接返回空列表
+	if len(myItems) == 0 {
+		utils.SuccessResponse(c, []TreasureResponse{})
+		return
+	}
+
+	// 收集所有宝物ID
+	var treasureIDs []uint
+	for _, item := range myItems {
+		treasureIDs = append(treasureIDs, item.ItemID)
+	}
+
+	// 查询宝物详细信息
+	var treasures []models.Treasure
+	if err := mic.db.Where("id IN ?", treasureIDs).Find(&treasures).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询宝物信息失败: "+err.Error())
+		return
+	}
+
+	// 构建宝物ID到宝物信息的映射
+	treasureMap := make(map[uint]models.Treasure)
+	for _, treasure := range treasures {
+		treasureMap[treasure.ID] = treasure
+	}
+
+	// 构建响应列表
+	var response []TreasureResponse
+	for _, item := range myItems {
+		if treasure, exists := treasureMap[item.ItemID]; exists {
+			response = append(response, TreasureResponse{
+				ID:          treasure.ID,
+				MyItemID:    item.ID,
+				Name:        treasure.Name,
+				ImageURL:    treasure.ImageURL,
+				Level:       treasure.Level,
+				Value:       treasure.Value,
+				Quantity:    item.Quantity,
+				Description: treasure.Description,
+			})
+		}
+	}
+
+	utils.SuccessResponse(c, response)
+}
+
 // SellMultipleTreasures 批量出售宝物
 func (mic *MyItemController) SellMultipleTreasures(c *gin.Context) {
 	// 从context中获取用户ID

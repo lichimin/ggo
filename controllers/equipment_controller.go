@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"ggo/models"
 	"ggo/utils"
 	"math/rand"
@@ -444,4 +445,159 @@ func (ec *EquipmentController) UnequipItem(c *gin.Context) {
 		"slot":        userEquipment.EquipmentTemplate.Slot,
 		"is_equipped": false,
 	})
+}
+
+// GetMyEquipment 获取我的装备，返回穿戴中和未穿戴的装备数组
+func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
+	// 从context获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "用户未认证")
+		return
+	}
+
+	// 查询用户的所有装备
+	var allEquipments []models.UserEquipment
+	if err := ec.db.Where("user_id = ?", userID.(uint)).
+		Preload("EquipmentTemplate").
+		Preload("AdditionalAttrs").
+		Find(&allEquipments).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "查询装备失败: "+err.Error())
+		return
+	}
+
+	// 定义装备响应结构
+	type EquipmentResponse struct {
+		ID              uint    `json:"id"`
+		Name            string  `json:"name"`
+		ImageURL        string  `json:"image_url"`
+		Rarity          string  `json:"rarity"`
+		BaseAttributes  gin.H   `json:"base_attributes"`
+		AdditionalAttrs []gin.H `json:"additional_attrs"`
+		RareAttrs       []gin.H `json:"rare_attrs"`
+	}
+
+	// 稀有度映射
+	rarityMap := map[int]string{
+		1: "普通",
+		2: "稀有",
+		3: "史诗",
+		4: "传说",
+		5: "神话",
+		6: "创世",
+	}
+
+	// 基础属性映射
+	baseAttrMap := map[string]string{
+		"hp":           "生命值",
+		"attack":       "攻击力",
+		"attack_speed": "攻击速度",
+		"move_speed":   "移动速度",
+		"bullet_speed": "子弹速度",
+		"drain":        "吸血",
+		"critical":     "暴击",
+		"dodge":        "闪避",
+		"instant_kill": "秒杀",
+		"recovery":     "生命恢复",
+		"trajectory":   "弹道",
+	}
+
+	// 附加属性映射
+	additionalAttrMap := map[string]string{
+		"attack_bonus":     "攻击力加成",
+		"critical_rate":    "暴击率",
+		"drain":            "吸血",
+		"damage_reduction": "减伤",
+		"recovery":         "生命恢复",
+		"attack_fixed":     "攻击力",
+		"hp_bonus":         "血量加成",
+	}
+
+	// 分类装备
+	var equipped []EquipmentResponse
+	var unequipped []EquipmentResponse
+
+	for _, eq := range allEquipments {
+		// 转换基础属性为中文
+		baseAttrs := gin.H{}
+		if eq.EquipmentTemplate.HP > 0 {
+			baseAttrs["生命值"] = eq.EquipmentTemplate.HP
+		}
+		if eq.EquipmentTemplate.Attack > 0 {
+			baseAttrs["攻击力"] = eq.EquipmentTemplate.Attack
+		}
+		if eq.EquipmentTemplate.AttackSpeed != 1.0 {
+			baseAttrs["攻击速度"] = eq.EquipmentTemplate.AttackSpeed
+		}
+		if eq.EquipmentTemplate.MoveSpeed > 0 {
+			baseAttrs["移动速度"] = fmt.Sprintf("%d%%", eq.EquipmentTemplate.MoveSpeed)
+		}
+		if eq.EquipmentTemplate.BulletSpeed > 0 {
+			baseAttrs["子弹速度"] = fmt.Sprintf("%d%%", eq.EquipmentTemplate.BulletSpeed)
+		}
+		if eq.EquipmentTemplate.Drain > 0 {
+			baseAttrs["吸血"] = fmt.Sprintf("%d%%", eq.EquipmentTemplate.Drain)
+		}
+		if eq.EquipmentTemplate.Critical > 0 {
+			baseAttrs["暴击"] = eq.EquipmentTemplate.Critical
+		}
+		if eq.EquipmentTemplate.Dodge > 0 {
+			baseAttrs["闪避"] = fmt.Sprintf("%d%%", eq.EquipmentTemplate.Dodge)
+		}
+		if eq.EquipmentTemplate.InstantKill > 0 {
+			baseAttrs["秒杀"] = fmt.Sprintf("%d%%", eq.EquipmentTemplate.InstantKill)
+		}
+		if eq.EquipmentTemplate.Recovery > 0 {
+			baseAttrs["生命恢复"] = eq.EquipmentTemplate.Recovery
+		}
+		if eq.EquipmentTemplate.Trajectory > 0 {
+			baseAttrs["弹道"] = eq.EquipmentTemplate.Trajectory
+		}
+
+		// 转换附加属性为中文
+		addAttrs := []gin.H{}
+		rareAttrs := []gin.H{}
+
+		for _, attr := range eq.AdditionalAttrs {
+			attrResponse := gin.H{
+				"name":  additionalAttrMap[attr.AttrType],
+				"value": attr.AttrValue,
+			}
+
+			if attr.AttrName != "" {
+				// 有名称的是稀有属性
+				attrResponse["name"] = attr.AttrName
+				rareAttrs = append(rareAttrs, attrResponse)
+			} else {
+				// 没有名称的是普通附加属性
+				addAttrs = append(addAttrs, attrResponse)
+			}
+		}
+
+		// 构建装备响应
+		equipmentResp := EquipmentResponse{
+			ID:              eq.ID,
+			Name:            eq.EquipmentTemplate.Name,
+			ImageURL:        eq.EquipmentTemplate.ImageURL,
+			Rarity:          rarityMap[eq.EquipmentTemplate.Level],
+			BaseAttributes:  baseAttrs,
+			AdditionalAttrs: addAttrs,
+			RareAttrs:       rareAttrs,
+		}
+
+		// 分类到穿戴或未穿戴
+		if eq.IsEquipped {
+			equipped = append(equipped, equipmentResp)
+		} else {
+			unequipped = append(unequipped, equipmentResp)
+		}
+	}
+
+	// 返回结果
+	response := gin.H{
+		"equipped":   equipped,
+		"unequipped": unequipped,
+	}
+
+	utils.SuccessResponse(c, response)
 }
