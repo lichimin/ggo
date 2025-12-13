@@ -496,11 +496,12 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		"chest":  "胸甲",
 		"gloves": "手套",
 		"pants":  "护腿",
-		"boots":  "靴子",
+		"boots":  "鞋子",
 	}
 
 	// 附加属性映射
 	additionalAttrMap := map[string]string{
+		// 普通属性映射
 		"attack_bonus":     "攻击力加成",
 		"critical_rate":    "暴击率",
 		"drain":            "吸血",
@@ -508,6 +509,14 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		"recovery":         "生命恢复",
 		"attack_fixed":     "攻击力",
 		"hp_bonus":         "血量加成",
+		// 稀有属性映射
+		"sloth":    "最大HP提升",
+		"envy":     "暴击伤害提升",
+		"gluttony": "攻速提升",
+		"greed":    "秒杀几率",
+		"lust":     "生命恢复",
+		"wrath":    "暴击率",
+		"pride":    "攻击力提升",
 	}
 
 	// 分类装备
@@ -571,19 +580,30 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 				attrValue = 0.0
 			}
 
+			// 获取属性名称
+			attrName := additionalAttrMap[attr.AttrType]
+
+			// 格式化属性值
+			var formattedValue string
+			if attr.AttrType == "greed" { // 特殊处理秒杀属性
+				formattedValue = "秒杀1%"
+			} else if attr.AttrType == "lust" || attr.AttrType == "attack_fixed" { // 非百分比属性
+				formattedValue = strconv.Itoa(int(attrValue))
+			} else { // 百分比属性
+				formattedValue = fmt.Sprintf("%.1f%%", attrValue)
+			}
+
 			if attr.AttrName != "" {
-				// 稀有属性：格式化为"暴怒·暴击率 28%"这样
-				baseAttrName := additionalAttrMap[attr.AttrType]
-				formattedValue := fmt.Sprintf("%.1f%%", attrValue)
-				fullName := fmt.Sprintf("%s·%s %s", attr.AttrName, baseAttrName, formattedValue)
+				// 稀有属性：格式化为"傲慢·最大HP提升15%"这样
+				fullName := fmt.Sprintf("%s·%s %s", attr.AttrName, attrName, formattedValue)
 				rareAttrs = append(rareAttrs, gin.H{
 					"name": fullName,
 				})
 			} else {
-				// 普通附加属性
+				// 普通附加属性：只显示"最大HP提升15%"
 				addAttrs = append(addAttrs, gin.H{
-					"name":  additionalAttrMap[attr.AttrType],
-					"value": fmt.Sprintf("%.1f%%", attrValue),
+					"name":  attrName,
+					"value": formattedValue,
 				})
 			}
 		}
