@@ -472,6 +472,7 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		Name            string  `json:"name"`
 		ImageURL        string  `json:"image_url"`
 		Rarity          string  `json:"rarity"`
+		Slot            string  `json:"slot"`
 		BaseAttributes  gin.H   `json:"base_attributes"`
 		AdditionalAttrs []gin.H `json:"additional_attrs"`
 		RareAttrs       []gin.H `json:"rare_attrs"`
@@ -485,6 +486,16 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		4: "传说",
 		5: "神话",
 		6: "创世",
+	}
+
+	// 部位映射
+	slotMap := map[string]string{
+		"weapon": "武器",
+		"helmet": "头盔",
+		"chest":  "胸甲",
+		"gloves": "手套",
+		"pants":  "护腿",
+		"boots":  "靴子",
 	}
 
 	// 附加属性映射
@@ -544,18 +555,20 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		rareAttrs := []gin.H{}
 
 		for _, attr := range eq.AdditionalAttrs {
-			attrResponse := gin.H{
-				"name":  additionalAttrMap[attr.AttrType],
-				"value": attr.AttrValue,
-			}
-
 			if attr.AttrName != "" {
-				// 有名称的是稀有属性
-				attrResponse["name"] = attr.AttrName
-				rareAttrs = append(rareAttrs, attrResponse)
+				// 稀有属性：格式化为"暴怒·暴击率 28%"这样
+				baseAttrName := additionalAttrMap[attr.AttrType]
+				formattedValue := fmt.Sprintf("%.1f%%", attr.AttrValue)
+				fullName := fmt.Sprintf("%s·%s %s", attr.AttrName, baseAttrName, formattedValue)
+				rareAttrs = append(rareAttrs, gin.H{
+					"name": fullName,
+				})
 			} else {
-				// 没有名称的是普通附加属性
-				addAttrs = append(addAttrs, attrResponse)
+				// 普通附加属性
+				addAttrs = append(addAttrs, gin.H{
+					"name":  additionalAttrMap[attr.AttrType],
+					"value": fmt.Sprintf("%.1f%%", attr.AttrValue),
+				})
 			}
 		}
 
@@ -565,6 +578,7 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 			Name:            eq.EquipmentTemplate.Name,
 			ImageURL:        eq.EquipmentTemplate.ImageURL,
 			Rarity:          rarityMap[eq.EquipmentTemplate.Level],
+			Slot:            slotMap[eq.EquipmentTemplate.Slot],
 			BaseAttributes:  baseAttrs,
 			AdditionalAttrs: addAttrs,
 			RareAttrs:       rareAttrs,
