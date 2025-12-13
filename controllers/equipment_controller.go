@@ -555,10 +555,16 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		rareAttrs := []gin.H{}
 
 		for _, attr := range eq.AdditionalAttrs {
+			// 将字符串类型的属性值转换为float64
+			attrValue, err := strconv.ParseFloat(attr.AttrValue, 64)
+			if err != nil {
+				attrValue = 0.0
+			}
+
 			if attr.AttrName != "" {
 				// 稀有属性：格式化为"暴怒·暴击率 28%"这样
 				baseAttrName := additionalAttrMap[attr.AttrType]
-				formattedValue := fmt.Sprintf("%.1f%%", attr.AttrValue)
+				formattedValue := fmt.Sprintf("%.1f%%", attrValue)
 				fullName := fmt.Sprintf("%s·%s %s", attr.AttrName, baseAttrName, formattedValue)
 				rareAttrs = append(rareAttrs, gin.H{
 					"name": fullName,
@@ -567,7 +573,7 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 				// 普通附加属性
 				addAttrs = append(addAttrs, gin.H{
 					"name":  additionalAttrMap[attr.AttrType],
-					"value": fmt.Sprintf("%.1f%%", attr.AttrValue),
+					"value": fmt.Sprintf("%.1f%%", attrValue),
 				})
 			}
 		}
