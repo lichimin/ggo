@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -555,8 +556,17 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		rareAttrs := []gin.H{}
 
 		for _, attr := range eq.AdditionalAttrs {
-			// 将字符串类型的属性值转换为float64
-			attrValue, err := strconv.ParseFloat(attr.AttrValue, 64)
+			// 清理属性值，去除百分号和其他非数字字符
+			cleanValue := attr.AttrValue
+			if strings.Contains(cleanValue, "%") {
+				cleanValue = strings.ReplaceAll(cleanValue, "%", "")
+			}
+			if strings.Contains(cleanValue, "秒杀") {
+				cleanValue = strings.ReplaceAll(cleanValue, "秒杀", "")
+			}
+
+			// 将清理后的字符串转换为float64
+			attrValue, err := strconv.ParseFloat(cleanValue, 64)
 			if err != nil {
 				attrValue = 0.0
 			}
