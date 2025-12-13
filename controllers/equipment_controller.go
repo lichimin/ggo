@@ -487,21 +487,6 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		6: "创世",
 	}
 
-	// 基础属性映射
-	baseAttrMap := map[string]string{
-		"hp":           "生命值",
-		"attack":       "攻击力",
-		"attack_speed": "攻击速度",
-		"move_speed":   "移动速度",
-		"bullet_speed": "子弹速度",
-		"drain":        "吸血",
-		"critical":     "暴击",
-		"dodge":        "闪避",
-		"instant_kill": "秒杀",
-		"recovery":     "生命恢复",
-		"trajectory":   "弹道",
-	}
-
 	// 附加属性映射
 	additionalAttrMap := map[string]string{
 		"attack_bonus":     "攻击力加成",
