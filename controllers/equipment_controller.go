@@ -474,6 +474,7 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 		ImageURL        string  `json:"image_url"`
 		Rarity          string  `json:"rarity"`
 		Slot            string  `json:"slot"`
+		EnhanceLevel    int     `json:"enhance_level"` // 强化等级
 		BaseAttributes  gin.H   `json:"base_attributes"`
 		AdditionalAttrs []gin.H `json:"additional_attrs"`
 		RareAttrs       []gin.H `json:"rare_attrs"`
@@ -615,6 +616,7 @@ func (ec *EquipmentController) GetMyEquipment(c *gin.Context) {
 			ImageURL:        eq.EquipmentTemplate.ImageURL,
 			Rarity:          rarityMap[eq.EquipmentTemplate.Level],
 			Slot:            slotMap[eq.EquipmentTemplate.Slot],
+			EnhanceLevel:    eq.EnhanceLevel, // 设置强化等级
 			BaseAttributes:  baseAttrs,
 			AdditionalAttrs: addAttrs,
 			RareAttrs:       rareAttrs,
