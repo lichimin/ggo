@@ -33,6 +33,7 @@ func SetupRoutes() *gin.Engine {
 		public.GET("/scenes", sceneController.GetScenes)          // 场景列表设为公开接口
 		public.GET("/treasures", treasureController.GetTreasures) // 宝物列表设为公开接口
 		public.GET("/home-configs", homeConfigController.GetHomeConfigs)
+		public.GET("/equipment-templates", equipmentController.GetEquipmentTemplates) // 装备模板列表设为公开接口
 	}
 
 	// 受保护路由（需要认证）
@@ -68,10 +69,10 @@ func SetupRoutes() *gin.Engine {
 
 		// 我的物品相关
 		protected.POST("/my-items", myItemController.AddMyItem)
-		protected.GET("/my-items", myItemController.GetMyItems) // 获取未穿戴的装备和其他物品
-		protected.GET("/my-items/equipped", myItemController.GetEquippedItems) // 获取已穿戴的装备
+		protected.GET("/my-items", myItemController.GetMyItems)                           // 获取未穿戴的装备和其他物品
+		protected.GET("/my-items/equipped", myItemController.GetEquippedItems)            // 获取已穿戴的装备
 		protected.POST("/my-items/sell-multiple", myItemController.SellMultipleTreasures) // 批量出售宝物
-		protected.GET("/my-items/treasures", myItemController.GetMyTreasures) // 获取我的宝物列表
+		protected.GET("/my-items/treasures", myItemController.GetMyTreasures)             // 获取我的宝物列表
 
 		// 装备相关
 		protected.POST("/equipments/generate", equipmentController.GenerateEquipment) // 生成装备

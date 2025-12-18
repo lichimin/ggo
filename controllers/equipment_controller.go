@@ -18,6 +18,40 @@ type EquipmentController struct {
 	db *gorm.DB
 }
 
+// GetEquipmentTemplates 获取装备模板列表
+func (ec *EquipmentController) GetEquipmentTemplates(c *gin.Context) {
+	// 获取查询参数
+	level := c.Query("level")
+	rarity := c.Query("rarity")
+	slot := c.Query("slot")
+
+	// 构建查询
+	query := ec.db.Model(&models.EquipmentTemplate{}).Where("is_active = ?", true)
+
+	// 添加过滤条件
+	if level != "" {
+		query = query.Where("level = ?", level)
+	}
+
+	if rarity != "" {
+		query = query.Where("rarity = ?", rarity)
+	}
+
+	if slot != "" {
+		query = query.Where("slot = ?", slot)
+	}
+
+	// 执行查询
+	var templates []models.EquipmentTemplate
+	if err := query.Find(&templates).Error; err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "获取装备模板失败: "+err.Error())
+		return
+	}
+
+	// 返回结果
+	utils.SuccessResponse(c, templates)
+}
+
 func NewEquipmentController(db *gorm.DB) *EquipmentController {
 	// 初始化随机数种子
 	rand.Seed(time.Now().UnixNano())
