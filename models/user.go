@@ -20,6 +20,7 @@ type User struct {
 type UserLoginRequest struct {
 	Username string `json:"username" binding:"required,min=1,max=50"`
 	Password string `json:"password" binding:"required,min=3,max=50"`
+	IsToken  int    `json:"is_token" binding:"omitempty,min=0,max=1"` // 0: 返回完整信息，1: 只返回token
 }
 
 // UserLoginResponse 登录响应

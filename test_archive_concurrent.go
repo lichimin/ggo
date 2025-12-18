@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"ggo/database"
 	"ggo/models"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"sync"
 	"testing"
 	"time"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -37,10 +38,10 @@ func TestArchiveConcurrent(t *testing.T) {
 	// 测试数据
 	userID := uint(1)
 	testData := map[string]interface{}{
-		"level":    10,
-		"score":    10000,
+		"level":     10,
+		"score":     10000,
 		"inventory": []string{"sword", "shield", "potion"},
-		"position": map[string]int{"x": 100, "y": 200},
+		"position":  map[string]int{"x": 100, "y": 200},
 	}
 
 	// 将测试数据转换为JSON字符串
@@ -68,60 +69,60 @@ func TestArchiveConcurrent(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < writesPerWriter; j++ {
 				// 为每个写入操作生成略有不同的数据
-			writeData := make(map[string]interface{})
-			for k, v := range testData {
-				writeData[k] = v
-			}
-			writeData["writer_id"] = writerID
-			writeData["write_count"] = j
-			writeData["timestamp"] = time.Now().UnixNano()
+				writeData := make(map[string]interface{})
+				for k, v := range testData {
+					writeData[k] = v
+				}
+				writeData["writer_id"] = writerID
+				writeData["write_count"] = j
+				writeData["timestamp"] = time.Now().UnixNano()
 
-			// 转换为JSON字符串
-			dataBytes, err := json.Marshal(writeData)
-			if err != nil {
-				t.Errorf("Writer %d, write %d: failed to marshal data: %v", writerID, j, err)
-				continue
-			}
-
-			// 使用Redis分布式锁确保并发安全
-			lockKey := fmt.Sprintf("lock:archive:%d", userID)
-			ctx := context.Background()
-			lock := database.RedisClient.SetNX(ctx, lockKey, "locked", 5*time.Second)
-			if lock.Val() == false {
-				// 锁获取失败，重试
-				j--
-				continue
-			}
-
-			// 保存到数据库
-			var archive models.Archive
-			db.Transaction(func(tx *gorm.DB) error {
-				result := tx.Where("user_id = ?", userID).First(&archive)
-				if result.Error != nil {
-					if result.Error == gorm.ErrRecordNotFound {
-						// 创建新存档
-						archive = models.Archive{
-							UserID:   userID,
-							JSONData: string(dataBytes),
-						}
-						return tx.Create(&archive).Error
-					}
-					return result.Error
+				// 转换为JSON字符串
+				dataBytes, err := json.Marshal(writeData)
+				if err != nil {
+					t.Errorf("Writer %d, write %d: failed to marshal data: %v", writerID, j, err)
+					continue
 				}
 
-				// 更新现有存档
-				archive.JSONData = string(dataBytes)
-				return tx.Save(&archive).Error
-			})
+				// 使用Redis分布式锁确保并发安全
+				lockKey := fmt.Sprintf("lock:archive:%d", userID)
+				ctx := context.Background()
+				lock := database.RedisClient.SetNX(ctx, lockKey, "locked", 5*time.Second)
+				if lock.Val() == false {
+					// 锁获取失败，重试
+					j--
+					continue
+				}
 
-			// 释放锁
-			database.RedisClient.Del(ctx, lockKey)
+				// 保存到数据库
+				var archive models.Archive
+				db.Transaction(func(tx *gorm.DB) error {
+					result := tx.Where("user_id = ?", userID).First(&archive)
+					if result.Error != nil {
+						if result.Error == gorm.ErrRecordNotFound {
+							// 创建新存档
+							archive = models.Archive{
+								UserID:   userID,
+								JSONData: string(dataBytes),
+							}
+							return tx.Create(&archive).Error
+						}
+						return result.Error
+					}
 
-			// 更新Redis缓存
-			redisKey := fmt.Sprintf("archive:%d", userID)
-			database.RedisClient.Set(ctx, redisKey, string(dataBytes), 24*time.Hour)
+					// 更新现有存档
+					archive.JSONData = string(dataBytes)
+					return tx.Save(&archive).Error
+				})
 
-			fmt.Printf("Writer %d: Write %d completed\n", writerID, j)
+				// 释放锁
+				database.RedisClient.Del(ctx, lockKey)
+
+				// 更新Redis缓存
+				redisKey := fmt.Sprintf("archive:%d", userID)
+				database.RedisClient.Set(ctx, redisKey, string(dataBytes), 24*time.Hour)
+
+				fmt.Printf("Writer %d: Write %d completed\n", writerID, j)
 			}
 		}(i)
 	}
@@ -157,7 +158,7 @@ func TestArchiveConcurrent(t *testing.T) {
 				}
 
 				fmt.Printf("Reader %d: Read %d completed, data: %v\n", readerID, j, data)
-				}
+			}
 		}(i)
 	}
 

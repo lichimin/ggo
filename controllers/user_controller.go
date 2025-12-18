@@ -37,8 +37,14 @@ func (uc *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	// 使用带token的响应
-	utils.SuccessResponseWithToken(c, response, newToken)
+	// 根据is_token参数决定返回内容
+	if req.IsToken == 1 {
+		// 只返回token
+		utils.SuccessResponseWithToken(c, gin.H{"token": newToken}, newToken)
+	} else {
+		// 返回完整信息
+		utils.SuccessResponseWithToken(c, response, newToken)
+	}
 }
 
 // GetProfile 获取用户信息

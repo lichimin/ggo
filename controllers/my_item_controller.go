@@ -244,14 +244,14 @@ func (mic *MyItemController) GetMyTreasures(c *gin.Context) {
 
 	// 定义宝物响应结构
 	type TreasureResponse struct {
-		ID          uint              `json:"id"`
-		MyItemID    uint              `json:"my_item_id"` // 我的物品ID
-		Name        string            `json:"name"`
-		ImageURL    string            `json:"image_url"`
-		Level       int               `json:"level"`
-		Value       int               `json:"value"`
-		Quantity    int               `json:"quantity"`
-		Description string            `json:"description,omitempty"`
+		ID          uint   `json:"id"`
+		MyItemID    uint   `json:"my_item_id"` // 我的物品ID
+		Name        string `json:"name"`
+		ImageURL    string `json:"image_url"`
+		Level       int    `json:"level"`
+		Value       int    `json:"value"`
+		Quantity    int    `json:"quantity"`
+		Description string `json:"description,omitempty"`
 	}
 
 	// 如果没有宝物，直接返回空列表
