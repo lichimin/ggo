@@ -25,6 +25,7 @@ func SetupRoutes() *gin.Engine {
 	homeConfigController := controllers.NewHomeConfigController(database.DB)
 	equipmentController := controllers.NewEquipmentController(database.DB)
 	equipmentEnhanceController := controllers.NewEquipmentEnhanceController(database.DB)
+	archiveController := controllers.NewArchiveController(database.DB)
 
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
@@ -83,6 +84,9 @@ func SetupRoutes() *gin.Engine {
 		// 装备强化相关
 		protected.POST("/equipments/merge", equipmentEnhanceController.MergeEquipment)         // 融合装备
 		protected.POST("/equipments/:id/enhance", equipmentEnhanceController.EnhanceEquipment) // 强化装备
+		// 存档相关
+		protected.POST("/archive", archiveController.SaveArchive) // 保存存档
+		protected.GET("/archive", archiveController.LoadArchive)  // 读取存档
 
 	}
 
