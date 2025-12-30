@@ -16,7 +16,7 @@ func main() {
 	database.InitRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 
 	// 设置路由并启动服务
-	router := routes.SetupRoutes()
+	router := routes.SetupRoutes(cfg)
 
 	log.Printf("Server starting on %s", cfg.ServerPort)
 	if err := router.Run(cfg.ServerPort); err != nil {

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"ggo/config"
 	"ggo/controllers"
 	"ggo/database"
 	"ggo/middleware"
@@ -8,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes() *gin.Engine {
+func SetupRoutes(cfg *config.Config) *gin.Engine {
 	router := gin.Default()
 
 	// 全局中间件
@@ -26,6 +27,7 @@ func SetupRoutes() *gin.Engine {
 	equipmentController := controllers.NewEquipmentController(database.DB)
 	equipmentEnhanceController := controllers.NewEquipmentEnhanceController(database.DB)
 	archiveController := controllers.NewArchiveController(database.DB)
+	wechatController := controllers.NewWeChatController(cfg)
 
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
@@ -35,6 +37,7 @@ func SetupRoutes() *gin.Engine {
 		public.GET("/treasures", treasureController.GetTreasures) // 宝物列表设为公开接口
 		public.GET("/home-configs", homeConfigController.GetHomeConfigs)
 		public.GET("/equipment-templates", equipmentController.GetEquipmentTemplates) // 装备模板列表设为公开接口
+		public.POST("/wechat/login", wechatController.GetOpenID)                      // 微信登录获取openid
 	}
 
 	// 受保护路由（需要认证）

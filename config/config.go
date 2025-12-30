@@ -9,11 +9,13 @@ import (
 )
 
 type Config struct {
-	ServerPort    string
-	PostgresDSN   string
-	RedisAddr     string
-	RedisPassword string
-	RedisDB       int
+	ServerPort      string
+	PostgresDSN     string
+	RedisAddr       string
+	RedisPassword   string
+	RedisDB         int
+	WeChatAppID     string
+	WeChatAppSecret string
 }
 
 func LoadConfig() *Config {
@@ -26,11 +28,13 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		ServerPort:    getEnv("SERVER_PORT", ":8080"),
-		PostgresDSN:   getEnv("POSTGRES_DSN", "host=localhost user=postgres password=postgres dbname=ggo port=5432 sslmode=disable"),
-		RedisAddr:     getEnv("REDIS_ADDR", "localhost:6379"),
-		RedisPassword: getEnv("REDIS_PASSWORD", ""),
-		RedisDB:       getEnvAsInt("REDIS_DB", 0),
+		ServerPort:      getEnv("SERVER_PORT", ":8080"),
+		PostgresDSN:     getEnv("POSTGRES_DSN", "host=localhost user=postgres password=postgres dbname=ggo port=5432 sslmode=disable"),
+		RedisAddr:       getEnv("REDIS_ADDR", "localhost:6379"),
+		RedisPassword:   getEnv("REDIS_PASSWORD", ""),
+		RedisDB:         getEnvAsInt("REDIS_DB", 0),
+		WeChatAppID:     getEnv("WECHAT_APP_ID", ""),
+		WeChatAppSecret: getEnv("WECHAT_APP_SECRET", ""),
 	}
 }
 
