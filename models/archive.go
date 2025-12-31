@@ -14,3 +14,8 @@ type Archive struct {
 	UpdatedAt int64          `json:"updated_at" gorm:"autoUpdateTime"`                 // 更新时间
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`                                   // 软删除
 }
+
+// TableName 指定表名
+func (Archive) TableName() string {
+	return "archives"
+}

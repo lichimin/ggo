@@ -28,6 +28,7 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 	equipmentEnhanceController := controllers.NewEquipmentEnhanceController(database.DB)
 	archiveController := controllers.NewArchiveController(database.DB)
 	wechatController := controllers.NewWeChatController(cfg)
+	leaderboardController := controllers.NewLeaderboardController(database.DB)
 
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
@@ -38,6 +39,8 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 		public.GET("/home-configs", homeConfigController.GetHomeConfigs)
 		public.GET("/equipment-templates", equipmentController.GetEquipmentTemplates) // 装备模板列表设为公开接口
 		public.POST("/wechat/login", wechatController.GetOpenID)                      // 微信登录获取openid
+		public.GET("/leaderboard", leaderboardController.GetLeaderboard)              // 获取排行榜
+		public.GET("/leaderboard/rank", leaderboardController.GetPlayerRank)          // 获取玩家排名
 	}
 
 	// 受保护路由（需要认证）
