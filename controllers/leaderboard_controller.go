@@ -126,13 +126,11 @@ func (lc *LeaderboardController) GetPlayerRank(c *gin.Context) {
 
 	// 解析name参数，提取原始name和user_id
 	// name格式: "name#ID"
-	var originalName string
 	var userID uint
 	if strings.Contains(playerName, "#") {
 		// 分割name和ID
 		parts := strings.Split(playerName, "#")
 		if len(parts) == 2 {
-			originalName = parts[0]
 			if parsedID, err := strconv.ParseUint(parts[1], 10, 32); err == nil {
 				userID = uint(parsedID)
 			} else {
