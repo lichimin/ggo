@@ -59,7 +59,7 @@ func (lc *LeaderboardController) GetLeaderboard(c *gin.Context) {
 	// 使用PostgreSQL的JSON操作函数直接查询和排序 - 优化版本
 	var rankQuery []RankQuery
 
-	// 根据排行榜类型构建查询语句，使用更高效的JSON操作
+	// 根据排行榜类型构建查询语句，使用高效的jsonb操作符
 	var querySQL string
 	switch rankType {
 	case "gold":
@@ -146,7 +146,7 @@ func (lc *LeaderboardController) GetPlayerRank(c *gin.Context) {
 		return
 	}
 
-	// 构建查询SQL，使用更高效的JSON操作
+	// 构建查询SQL，使用高效的jsonb操作符
 	switch rankType {
 	case "gold":
 		querySQL = "SELECT CAST(json_data->>'gold' AS INTEGER) FROM archives WHERE user_id = ? AND json_data->>'gold' IS NOT NULL AND json_data->>'gold' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'gold' AS INTEGER) DESC LIMIT 1"
