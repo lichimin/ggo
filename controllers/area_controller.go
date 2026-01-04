@@ -22,13 +22,12 @@ func NewAreaController(db *gorm.DB) *AreaController {
 // GetAreas 获取区服列表
 func (ac *AreaController) GetAreas(c *gin.Context) {
 	var areas []models.Area
-	
+
 	// 查询区服列表，只返回需要的字段
 	result := ac.db.Model(&models.Area{}).
-		Where("status = ?", 1). // 只返回正常状态的区服
-		Order("area ASC").
+		Order("id DESC").
 		Find(&areas)
-	
+
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "查询区服列表失败: "+result.Error.Error())
 		return
