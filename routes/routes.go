@@ -27,6 +27,7 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 	equipmentController := controllers.NewEquipmentController(database.DB)
 	equipmentEnhanceController := controllers.NewEquipmentEnhanceController(database.DB)
 	archiveController := controllers.NewArchiveController(database.DB)
+	areaController := controllers.NewAreaController(database.DB)
 	wechatController := controllers.NewWeChatController(cfg)
 	leaderboardController := controllers.NewLeaderboardController(database.DB)
 
@@ -41,6 +42,7 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 		public.POST("/wechat/login", wechatController.GetOpenID)                      // 微信登录获取openid
 		public.GET("/leaderboard", leaderboardController.GetLeaderboard)              // 获取排行榜
 		public.GET("/leaderboard/rank", leaderboardController.GetPlayerRank)          // 获取玩家排名
+		public.GET("/areas", areaController.GetAreas)                                 // 区服列表
 	}
 
 	// 受保护路由（需要认证）
@@ -91,8 +93,8 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 		protected.POST("/equipments/merge", equipmentEnhanceController.MergeEquipment)         // 融合装备
 		protected.POST("/equipments/:id/enhance", equipmentEnhanceController.EnhanceEquipment) // 强化装备
 		// 存档相关
-		protected.POST("/archive", archiveController.SaveArchive) // 保存存档
-		protected.GET("/archive", archiveController.LoadArchive)  // 读取存档
+		protected.POST("/archive", archiveController.SaveArchive) // 保存存档（包含area参数）
+		protected.GET("/archive", archiveController.LoadArchive)  // 读取存档（支持area参数）
 
 	}
 

@@ -32,6 +32,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 	var req struct {
 		JSONData interface{} `json:"json_data" binding:"required"`
 		V        int         `json:"v" binding:"required"`
+		Area     int         `json:"area" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -60,6 +61,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 					UserID:   userID.(uint),
 					JSONData: string(jsonData),
 					V:        req.V,
+					Area:     req.Area,
 				}
 				if err := tx.Create(&archive).Error; err != nil {
 					return err
@@ -75,6 +77,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 		if req.V > archive.V {
 			archive.JSONData = string(jsonData)
 			archive.V = req.V
+			archive.Area = req.Area
 			if err := tx.Save(&archive).Error; err != nil {
 				return err
 			}
@@ -101,9 +104,15 @@ func (ac *ArchiveController) LoadArchive(c *gin.Context) {
 		return
 	}
 
+	// 从请求参数获取 area
+	area := 1 // 默认区服
+	if areaParam := c.Query("area"); areaParam != "" {
+		fmt.Sscanf(areaParam, "%d", &area)
+	}
+
 	// 直接从数据库读取存档
 	var archive models.Archive
-	result := ac.db.Where("user_id = ?", userID).First(&archive)
+	result := ac.db.Where("user_id = ? AND area = ?", userID, area).First(&archive)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			utils.ErrorResponse(c, http.StatusNotFound, "存档不存在")
@@ -123,5 +132,6 @@ func (ac *ArchiveController) LoadArchive(c *gin.Context) {
 	utils.SuccessResponse(c, gin.H{
 		"json_data": data,
 		"v":         archive.V,
+		"area":      archive.Area,
 	})
 }
