@@ -52,7 +52,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 	var responseMessage string
 	ac.db.Transaction(func(tx *gorm.DB) error {
 		var archive models.Archive
-		result := tx.Where("user_id = ?", userID).First(&archive)
+		result := tx.Where("user_id = ? and area = ?", userID, req.Area).First(&archive)
 
 		if result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
