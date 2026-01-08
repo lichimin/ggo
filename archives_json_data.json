@@ -1,0 +1,331 @@
+{
+    "openid": "",
+    "name": "冒险者",
+    "open_id": "oofyC18yIM2sdokf7KAiy80dRz6Q",
+    "token": "",
+    "img": "/res/head.jpg",
+    "title": "/res/game/scene/title/fbz.png",
+    "gold": 5012103,
+    "diamond": 153980,
+    "level": 3,
+    "exp": 3,
+    "chapter": 5,
+    "touchchapter": 5,
+    "gametime": 128,
+    "take_time": 1767845089364,
+    "cdkey": [
+        "lcm1108"
+    ],
+    "kill": 8,
+    "guide_list": {
+        "2": {
+            "level": 6,
+            "submitted": 0
+        },
+        "3": {
+            "level": 6,
+            "submitted": 7
+        },
+        "7": {
+            "level": 5,
+            "submitted": 1
+        },
+        "8": {
+            "level": 6,
+            "submitted": 0
+        },
+        "9": {
+            "level": 6,
+            "submitted": 15
+        },
+        "10": {
+            "level": 6,
+            "submitted": 29
+        },
+        "11": {
+            "level": 6,
+            "submitted": 12
+        },
+        "12": {
+            "level": 6,
+            "submitted": 7
+        },
+        "13": {
+            "level": 6,
+            "submitted": 15
+        }
+    },
+    "user_treasures": [
+        {
+            "treasure_id": 1,
+            "quantity": 43
+        },
+        {
+            "treasure_id": 2,
+            "quantity": 17
+        },
+        {
+            "treasure_id": 8,
+            "quantity": 27
+        },
+        {
+            "treasure_id": 7,
+            "quantity": 26
+        }
+    ],
+    "user_skins": {
+        "skin_id": [
+            1
+        ],
+        "use_skin_id": [
+            2
+        ]
+    },
+    "skins_time": 1767845200747,
+    "user_equipments": {
+        "equipments": [
+            {
+                "equipment_id": 61,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 62,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 38,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 63,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 28,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 64,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 22,
+                "level": 6,
+                "attr": [],
+                "identify_count": 0
+            }
+        ],
+        "unequipments": [
+            {
+                "equipment_id": 56,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 57,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 58,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 59,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 27,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 60,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 21,
+                "level": 5,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 40,
+                "level": 1,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 40,
+                "level": 1,
+                "attr": [],
+                "identify_count": 0
+            },
+            {
+                "equipment_id": 15,
+                "level": 1,
+                "attr": [],
+                "identify_count": 0
+            }
+        ]
+    },
+    "Area": 3,
+    "starChart": {
+        "unlockedNodes": [
+            "root",
+            "c1"
+        ]
+    },
+    "base_attributes": {
+        "hp": 250,
+        "attack": 50,
+        "attack_speed": 1.3,
+        "move_speed": 100,
+        "drain": 0,
+        "critical_rate": 0,
+        "critical_damage": 1.5,
+        "dodge": 0,
+        "instant_kill": 0,
+        "recovery": 0,
+        "flame_damage": 0,
+        "frost_damage": 0,
+        "poison_damage": 0,
+        "damage_reduction": 0,
+        "atk_type": 0,
+        "attack_mode": 1
+    },
+    "pending_idle_rewards": {
+        "treasures": [],
+        "last_update": 1767845090095
+    },
+    "mystery_shop": {
+        "last_refresh_time": 1767845504706,
+        "items": [
+            {
+                "type": "treasure",
+                "id": 3,
+                "level": 3,
+                "price": 30000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "茶杯",
+                "image_url": "https://czrimg.godqb.com/game/bw/3-1.jpg"
+            },
+            {
+                "type": "equipment",
+                "id": 48,
+                "level": 3,
+                "price": 100000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "秘银胸甲",
+                "image_url": "/res/game/zb/ss4.png"
+            },
+            {
+                "type": "equipment",
+                "id": 15,
+                "level": 1,
+                "price": 20000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "亚麻衬衫",
+                "image_url": "/res/game/zb/pt5.png"
+            },
+            {
+                "type": "treasure",
+                "id": 14,
+                "level": 4,
+                "price": 50000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "古董花瓶",
+                "image_url": "https://czrimg.godqb.com/game/bw/4-2.jpg"
+            },
+            {
+                "type": "treasure",
+                "id": 1,
+                "level": 1,
+                "price": 10000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "石头",
+                "image_url": "https://czrimg.godqb.com/game/bw/1-1.jpg"
+            },
+            {
+                "type": "equipment",
+                "id": 15,
+                "level": 1,
+                "price": 20000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "亚麻衬衫",
+                "image_url": "/res/game/zb/pt5.png"
+            },
+            {
+                "type": "equipment",
+                "id": 23,
+                "level": 2,
+                "price": 50000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "轻便皮靴",
+                "image_url": "/res/game/zb/xy5.png"
+            },
+            {
+                "type": "equipment",
+                "id": 18,
+                "level": 2,
+                "price": 50000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "青铜戒指",
+                "image_url": "/res/game/zb/xy1.jpg"
+            },
+            {
+                "type": "equipment",
+                "id": 15,
+                "level": 1,
+                "price": 20000,
+                "isPurchased": false,
+                "hasExtraStats": false,
+                "extraStats": null,
+                "name": "亚麻衬衫",
+                "image_url": "/res/game/zb/pt5.png"
+            }
+        ]
+    },
+    "boss_last_result": {
+        "time": 60,
+        "damage": 1024385,
+        "updated_at": 1767845631817
+    }
+}
