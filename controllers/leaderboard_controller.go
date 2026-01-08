@@ -113,7 +113,7 @@ func (lc *LeaderboardController) GetLeaderboard(c *gin.Context) {
 	}
 
 	// 构建返回结果
-	var playerRanks []PlayerRank
+	playerRanks := []PlayerRank{}
 	for i, rank := range rankQuery {
 		// 拼接name和user_id为name#ID格式
 		displayName := rank.Name + "#" + strconv.Itoa(int(rank.UserID))
