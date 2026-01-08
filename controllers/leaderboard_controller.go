@@ -60,13 +60,21 @@ func (lc *LeaderboardController) GetLeaderboard(c *gin.Context) {
 		return
 	}
 
+	// 获取区服参数，默认为1
+	area := 1
+	if areaParam := c.Query("area"); areaParam != "" {
+		if parsedArea, err := strconv.Atoi(areaParam); err == nil && parsedArea > 0 {
+			area = parsedArea
+		}
+	}
+
 	// 获取今天的开始时间（0点0分0秒）
 	today := time.Now()
 	todayStart := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
 	todayStartTimestamp := todayStart.UnixMilli()
 
 	// 生成缓存键
-	cacheKey := "leaderboard:" + rankType
+	cacheKey := "leaderboard:" + rankType + ":" + strconv.Itoa(area)
 	if rankType == "damage" {
 		// 伤害排行榜缓存键包含日期，确保每天的数据独立缓存
 		cacheKey += ":" + today.Format("2006-01-02")
@@ -90,22 +98,26 @@ func (lc *LeaderboardController) GetLeaderboard(c *gin.Context) {
 
 	// 根据排行榜类型构建查询语句，使用高效的jsonb操作符
 	var querySQL string
+	var queryParams []interface{}
 	switch rankType {
 	case "gold":
-		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data->>'gold' AS INTEGER) as value FROM archives WHERE json_data->>'gold' IS NOT NULL AND json_data->>'gold' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'gold' AS INTEGER) DESC LIMIT 10"
+		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data->>'gold' AS INTEGER) as value FROM archives WHERE area = ? AND json_data->>'gold' IS NOT NULL AND json_data->>'gold' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'gold' AS INTEGER) DESC LIMIT 10"
+		queryParams = []interface{}{area}
 	case "chapter":
-		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data->>'chapter' AS INTEGER) as value FROM archives WHERE json_data->>'chapter' IS NOT NULL AND json_data->>'chapter' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'chapter' AS INTEGER) DESC LIMIT 10"
+		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data->>'chapter' AS INTEGER) as value FROM archives WHERE area = ? AND json_data->>'chapter' IS NOT NULL AND json_data->>'chapter' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'chapter' AS INTEGER) DESC LIMIT 10"
+		queryParams = []interface{}{area}
 	case "damage":
 		// 只查询今天的伤害数据
-		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) as value FROM archives WHERE json_data#>>'{boss_last_result,damage}' IS NOT NULL AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ? ORDER BY CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) DESC LIMIT 10"
+		querySQL = "SELECT user_id, json_data->>'name' as name, CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) as value FROM archives WHERE area = ? AND json_data#>>'{boss_last_result,damage}' IS NOT NULL AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ? ORDER BY CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) DESC LIMIT 10"
+		queryParams = []interface{}{area, todayStartTimestamp}
 	}
 
 	// 执行原生SQL查询
 	var result *gorm.DB
 	if rankType == "damage" {
-		result = lc.db.Raw(querySQL, todayStartTimestamp).Scan(&rankQuery)
+		result = lc.db.Raw(querySQL, queryParams...).Scan(&rankQuery)
 	} else {
-		result = lc.db.Raw(querySQL).Scan(&rankQuery)
+		result = lc.db.Raw(querySQL, queryParams...).Scan(&rankQuery)
 	}
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "获取排行榜数据失败: "+result.Error.Error())
@@ -148,6 +160,14 @@ func (lc *LeaderboardController) GetPlayerRank(c *gin.Context) {
 	if playerName == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "缺少name参数")
 		return
+	}
+
+	// 获取区服参数，默认为1
+	area := 1
+	if areaParam := c.Query("area"); areaParam != "" {
+		if parsedArea, err := strconv.Atoi(areaParam); err == nil && parsedArea > 0 {
+			area = parsedArea
+		}
 	}
 
 	// 验证type参数
@@ -196,22 +216,22 @@ func (lc *LeaderboardController) GetPlayerRank(c *gin.Context) {
 	// 构建查询SQL，使用高效的jsonb操作符
 	switch rankType {
 	case "gold":
-		querySQL = "SELECT CAST(json_data->>'gold' AS INTEGER) FROM archives WHERE user_id = ? AND json_data->>'gold' IS NOT NULL AND json_data->>'gold' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'gold' AS INTEGER) DESC LIMIT 1"
-		countSQL = "SELECT COUNT(*) FROM archives WHERE CAST(json_data->>'gold' AS INTEGER) > (SELECT COALESCE(CAST(json_data->>'gold' AS INTEGER), 0) FROM archives WHERE user_id = ? AND json_data->>'gold' ~ '^[0-9]+$') AND json_data->>'gold' ~ '^[0-9]+$'"
+		querySQL = "SELECT CAST(json_data->>'gold' AS INTEGER) FROM archives WHERE user_id = ? AND area = ? AND json_data->>'gold' IS NOT NULL AND json_data->>'gold' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'gold' AS INTEGER) DESC LIMIT 1"
+		countSQL = "SELECT COUNT(*) FROM archives WHERE area = ? AND CAST(json_data->>'gold' AS INTEGER) > (SELECT COALESCE(CAST(json_data->>'gold' AS INTEGER), 0) FROM archives WHERE user_id = ? AND area = ? AND json_data->>'gold' ~ '^[0-9]+$') AND json_data->>'gold' ~ '^[0-9]+$'"
 	case "chapter":
-		querySQL = "SELECT CAST(json_data->>'chapter' AS INTEGER) FROM archives WHERE user_id = ? AND json_data->>'chapter' IS NOT NULL AND json_data->>'chapter' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'chapter' AS INTEGER) DESC LIMIT 1"
-		countSQL = "SELECT COUNT(*) FROM archives WHERE CAST(json_data->>'chapter' AS INTEGER) > (SELECT COALESCE(CAST(json_data->>'chapter' AS INTEGER), 0) FROM archives WHERE user_id = ? AND json_data->>'chapter' ~ '^[0-9]+$') AND json_data->>'chapter' ~ '^[0-9]+$'"
+		querySQL = "SELECT CAST(json_data->>'chapter' AS INTEGER) FROM archives WHERE user_id = ? AND area = ? AND json_data->>'chapter' IS NOT NULL AND json_data->>'chapter' ~ '^[0-9]+$' ORDER BY CAST(json_data->>'chapter' AS INTEGER) DESC LIMIT 1"
+		countSQL = "SELECT COUNT(*) FROM archives WHERE area = ? AND CAST(json_data->>'chapter' AS INTEGER) > (SELECT COALESCE(CAST(json_data->>'chapter' AS INTEGER), 0) FROM archives WHERE user_id = ? AND area = ? AND json_data->>'chapter' ~ '^[0-9]+$') AND json_data->>'chapter' ~ '^[0-9]+$'"
 	case "damage":
-		querySQL = "SELECT CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) FROM archives WHERE user_id = ? AND json_data#>>'{boss_last_result,damage}' IS NOT NULL AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ? ORDER BY CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) DESC LIMIT 1"
-		countSQL = "SELECT COUNT(*) FROM archives WHERE CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) > (SELECT COALESCE(CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER), 0) FROM archives WHERE user_id = ? AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ?) AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ?"
+		querySQL = "SELECT CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) FROM archives WHERE user_id = ? AND area = ? AND json_data#>>'{boss_last_result,damage}' IS NOT NULL AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ? ORDER BY CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) DESC LIMIT 1"
+		countSQL = "SELECT COUNT(*) FROM archives WHERE area = ? AND CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER) > (SELECT COALESCE(CAST(json_data#>>'{boss_last_result,damage}' AS INTEGER), 0) FROM archives WHERE user_id = ? AND area = ? AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ?) AND json_data#>>'{boss_last_result,damage}' ~ '^[0-9]+$' AND CAST(json_data#>>'{boss_last_result,updated_at}' AS BIGINT) >= ?"
 	}
 
 	// 获取玩家数值
 	var result *gorm.DB
 	if rankType == "damage" {
-		result = lc.db.Raw(querySQL, userID, todayStartTimestamp).Scan(&playerValue)
+		result = lc.db.Raw(querySQL, userID, area, todayStartTimestamp).Scan(&playerValue)
 	} else {
-		result = lc.db.Raw(querySQL, userID).Scan(&playerValue)
+		result = lc.db.Raw(querySQL, userID, area).Scan(&playerValue)
 	}
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "获取玩家数据失败: "+result.Error.Error())
@@ -225,9 +245,9 @@ func (lc *LeaderboardController) GetPlayerRank(c *gin.Context) {
 
 	// 获取排名（比玩家数值高的记录数 + 1）
 	if rankType == "damage" {
-		result = lc.db.Raw(countSQL, userID, todayStartTimestamp, todayStartTimestamp).Scan(&totalCount)
+		result = lc.db.Raw(countSQL, area, userID, area, todayStartTimestamp, todayStartTimestamp).Scan(&totalCount)
 	} else {
-		result = lc.db.Raw(countSQL, userID).Scan(&totalCount)
+		result = lc.db.Raw(countSQL, area, userID, area).Scan(&totalCount)
 	}
 	if result.Error != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "计算玩家排名失败: "+result.Error.Error())
