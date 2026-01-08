@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"ggo/models"
 	"ggo/utils"
@@ -40,13 +39,6 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 		return
 	}
 
-	// 将JSON数据转换为字符串
-	jsonData, err := json.Marshal(req.JSONData)
-	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "JSON序列化失败: "+err.Error())
-		return
-	}
-
 	// 使用事务确保数据一致性
 	var saveSuccess bool
 	var responseMessage string
@@ -59,7 +51,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 				// 创建新存档
 				archive = models.Archive{
 					UserID:   userID.(uint),
-					JSONData: string(jsonData),
+					JSONData: req.JSONData,
 					V:        req.V,
 					Area:     req.Area,
 				}
@@ -75,7 +67,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 
 		// 检查版本号，如果当前版本大于数据库版本则更新
 		if req.V > archive.V {
-			archive.JSONData = string(jsonData)
+			archive.JSONData = req.JSONData
 			archive.V = req.V
 			archive.Area = req.Area
 			if err := tx.Save(&archive).Error; err != nil {
@@ -122,15 +114,8 @@ func (ac *ArchiveController) LoadArchive(c *gin.Context) {
 		return
 	}
 
-	// 解析JSON数据
-	var data interface{}
-	if err := json.Unmarshal([]byte(archive.JSONData), &data); err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "解析存档数据失败: "+err.Error())
-		return
-	}
-
 	utils.SuccessResponse(c, gin.H{
-		"json_data": data,
+		"json_data": archive.JSONData,
 		"v":         archive.V,
 		"area":      archive.Area,
 	})
