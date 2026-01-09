@@ -139,7 +139,7 @@ func (lc *LeaderboardController) GetLeaderboard(c *gin.Context) {
 	// 将结果存入Redis，设置10分钟过期时间
 	if len(playerRanks) > 0 {
 		if jsonData, err := json.Marshal(playerRanks); err == nil {
-			database.RedisClient.Set(ctx, cacheKey, jsonData, 10*time.Minute)
+			database.RedisClient.Set(ctx, cacheKey, jsonData, 5*time.Minute)
 		}
 	}
 
