@@ -29,9 +29,9 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 	}
 
 	var req struct {
-		JSONData interface{} `json:"json_data" binding:"required"`
-		V        int         `json:"v" binding:"required"`
-		Area     int         `json:"area" binding:"required"`
+		JSONData map[string]interface{} `json:"json_data" binding:"required"`
+		V        int                    `json:"v" binding:"required"`
+		Area     int                    `json:"area" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
