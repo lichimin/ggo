@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"ggo/models"
 	"ggo/utils"
@@ -29,13 +30,30 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 	}
 
 	var req struct {
-		JSONData models.JSONB `json:"json_data" binding:"required"`
-		V        int          `json:"v" binding:"required"`
-		Area     int          `json:"area" binding:"required"`
+		JSONData interface{} `json:"json_data" binding:"required"`
+		V        int         `json:"v" binding:"required"`
+		Area     int         `json:"area" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	// 处理JSONData字段，支持字符串和对象两种格式
+	var jsonData models.JSONB
+	switch v := req.JSONData.(type) {
+	case string:
+		// 如果是字符串，尝试解析为JSON对象
+		if err := json.Unmarshal([]byte(v), &jsonData); err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, "json_data参数格式错误，应为有效的JSON字符串或对象: "+err.Error())
+			return
+		}
+	case map[string]interface{}:
+		// 如果是对象，直接使用
+		jsonData = v
+	default:
+		utils.ErrorResponse(c, http.StatusBadRequest, "json_data参数格式错误，应为字符串或对象")
 		return
 	}
 
@@ -51,7 +69,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 				// 创建新存档
 				archive = models.Archive{
 					UserID:   userID.(uint),
-					JSONData: req.JSONData,
+					JSONData: jsonData,
 					V:        req.V,
 					Area:     req.Area,
 				}
@@ -67,7 +85,7 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 
 		// 检查版本号，如果当前版本大于数据库版本则更新
 		if req.V > archive.V {
-			archive.JSONData = req.JSONData
+			archive.JSONData = jsonData
 			archive.V = req.V
 			archive.Area = req.Area
 			if err := tx.Save(&archive).Error; err != nil {
