@@ -26,6 +26,7 @@ func InitPostgres(dsn string) {
 		&models.UserSkin{},
 		&models.Scene{},
 		&models.Treasure{},
+		&models.Mail{},
 		&models.MyItem{},
 		&models.HomeConfig{},
 		&models.EquipmentTemplate{},

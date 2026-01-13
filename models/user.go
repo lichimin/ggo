@@ -10,6 +10,7 @@ type User struct {
 	Username  string    `json:"username" gorm:"size:50;uniqueIndex;not null"` // 账号
 	Password  string    `json:"-" gorm:"size:255;not null"`                   // 密码（不序列化到JSON）
 	Gold      int       `json:"gold" gorm:"default:0"`                        // 金币
+	Diamond   int       `json:"diamond" gorm:"default:0"`                     // 钻石
 	Level     int       `json:"level" gorm:"default:1"`                       // 等级
 	LastLogin time.Time `json:"last_login"`                                   // 最后登录时间
 	CreatedAt time.Time `json:"created_at"`
@@ -29,6 +30,7 @@ type UserLoginResponse struct {
 	Username string `json:"username"`
 	Img      string `json:"img"`
 	Gold     int    `json:"gold"`
+	Diamond  int    `json:"diamond"`
 	Level    int    `json:"level"`
 	Token    string `json:"token"`
 }

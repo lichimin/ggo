@@ -30,6 +30,7 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 	areaController := controllers.NewAreaController(database.DB)
 	wechatController := controllers.NewWeChatController(cfg)
 	leaderboardController := controllers.NewLeaderboardController(database.DB)
+	mailController := controllers.NewMailController(database.DB)
 
 	// 公开路由（无需认证）
 	public := router.Group("/api/v1")
@@ -96,7 +97,13 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 		protected.POST("/archive", archiveController.SaveArchive) // 保存存档（包含area参数）
 		protected.GET("/archive", archiveController.LoadArchive)  // 读取存档（支持area参数）
 
+		protected.GET("/mails", mailController.GetMails)
+		protected.POST("/mails/:id/claim", mailController.ClaimMail)
+		protected.POST("/mails/send", mailController.SendMail)
+
 	}
+
+	router.GET("/admin/mail", mailController.SendMailPage)
 
 	// 健康检查
 	router.GET("/health", func(c *gin.Context) {

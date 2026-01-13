@@ -83,6 +83,7 @@ func (s *UserService) register(req *models.UserLoginRequest) (*models.UserLoginR
 		UserID:   user.ID,
 		Username: user.Username,
 		Gold:     user.Gold,
+		Diamond:  user.Diamond,
 		Level:    user.Level,
 		Token:    token,
 	}
@@ -111,6 +112,7 @@ func (s *UserService) login(user *models.User, password string) (*models.UserLog
 		UserID:   user.ID,
 		Username: user.Username,
 		Gold:     user.Gold,
+		Diamond:  user.Diamond,
 		Level:    user.Level,
 		Token:    newToken,
 	}
