@@ -8,9 +8,7 @@ type Mail struct {
 	ItemType  string `json:"item_type" gorm:"size:20;default:''"`
 	ItemID    uint   `json:"item_id" gorm:"default:0"`
 	Num       int    `json:"num" gorm:"default:0"`
-	Lv        int    `json:"lv" gorm:"default:0"`
 	Status    int    `json:"status" gorm:"not null;default:0;index"`
 	CreatedAt int64  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt int64  `json:"updated_at" gorm:"autoUpdateTime"`
 }
-

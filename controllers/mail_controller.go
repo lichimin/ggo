@@ -100,7 +100,7 @@ func (mc *MailController) ClaimMail(c *gin.Context) {
 				EquipmentID:  mail.ItemID,
 				IsEquipped:   false,
 				Position:     "backpack",
-				EnhanceLevel: mail.Lv,
+				EnhanceLevel: 0,
 			}
 			if err := tx.Create(&userEquipment).Error; err != nil {
 				return err
@@ -119,9 +119,6 @@ func (mc *MailController) ClaimMail(c *gin.Context) {
 			var treasure models.Treasure
 			if err := tx.First(&treasure, mail.ItemID).Error; err != nil {
 				return errors.New("宝物不存在")
-			}
-			if mail.Lv > 0 && treasure.Level != mail.Lv {
-				return errors.New("宝物等级不匹配")
 			}
 
 			var myItem models.MyItem
@@ -188,7 +185,6 @@ type SendMailRequest struct {
 	Type    string `json:"type" binding:"required"`
 	ItemID  uint   `json:"item_id"`
 	Num     int    `json:"num" binding:"required,min=1"`
-	Lv      int    `json:"lv"`
 }
 
 func (mc *MailController) SendMail(c *gin.Context) {
@@ -205,10 +201,6 @@ func (mc *MailController) SendMail(c *gin.Context) {
 			utils.ErrorResponse(c, http.StatusBadRequest, "item_id必填")
 			return
 		}
-		if req.Lv <= 0 {
-			utils.ErrorResponse(c, http.StatusBadRequest, "lv必填")
-			return
-		}
 	default:
 		utils.ErrorResponse(c, http.StatusBadRequest, "type无效")
 		return
@@ -223,7 +215,6 @@ func (mc *MailController) SendMail(c *gin.Context) {
 			ItemType: req.Type,
 			ItemID:   req.ItemID,
 			Num:      req.Num,
-			Lv:       req.Lv,
 			Status:   0,
 		})
 	}
@@ -263,9 +254,9 @@ const mailSendHTML = `<!doctype html>
 
   <div class="row">
     <div class="col">
-      <label>管理员Token（Authorization: Bearer）</label>
-      <input id="token" placeholder="粘贴token"/>
-      <div class="hint">点击“加载用户”会调用 /api/v1/users（需要token）</div>
+      <label>管理员Token（固定：1108）</label>
+      <input id="token" value="1108" placeholder="1108"/>
+      <div class="hint">点击“加载用户”会调用 /api/v1/admin/users</div>
       <button id="loadUsers">加载用户</button>
       <label>选择用户（可多选）</label>
       <select id="users" multiple size="10"></select>
@@ -298,10 +289,6 @@ const mailSendHTML = `<!doctype html>
           <label>num（数量）</label>
           <input id="num" type="number" min="1" value="1"/>
         </div>
-        <div class="col">
-          <label>lv（装备/宝物必填）</label>
-          <input id="lv" type="number" min="0" value="1"/>
-        </div>
       </div>
 
       <button id="send">发送</button>
@@ -312,9 +299,9 @@ const mailSendHTML = `<!doctype html>
   <pre id="result"></pre>
 
   <script>
-    function bearer() {
+    function authHeader() {
       const t = document.getElementById('token').value.trim();
-      return t ? ('Bearer ' + t) : '';
+      return t;
     }
 
     function setResult(obj) {
@@ -340,8 +327,8 @@ const mailSendHTML = `<!doctype html>
     document.getElementById('loadUsers').addEventListener('click', async () => {
       setResult('加载中...');
       try {
-        const resp = await fetch('/api/v1/users', {
-          headers: { 'Authorization': bearer() }
+        const resp = await fetch('/api/v1/admin/users', {
+          headers: { 'Authorization': authHeader() }
         });
         const data = await resp.json();
         if (!resp.ok || !data.success) {
@@ -372,15 +359,14 @@ const mailSendHTML = `<!doctype html>
           content: document.getElementById('content').value,
           type: document.getElementById('type').value,
           item_id: parseInt(document.getElementById('itemId').value, 10) || 0,
-          num: parseInt(document.getElementById('num').value, 10) || 0,
-          lv: parseInt(document.getElementById('lv').value, 10) || 0
+          num: parseInt(document.getElementById('num').value, 10) || 0
         };
 
-        const resp = await fetch('/api/v1/mails/send', {
+        const resp = await fetch('/api/v1/admin/mails/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': bearer()
+            'Authorization': authHeader()
           },
           body: JSON.stringify(payload)
         });
@@ -392,5 +378,4 @@ const mailSendHTML = `<!doctype html>
     });
   </script>
 </body>
-</html>`;
-
+</html>`

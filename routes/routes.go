@@ -99,8 +99,14 @@ func SetupRoutes(cfg *config.Config) *gin.Engine {
 
 		protected.GET("/mails", mailController.GetMails)
 		protected.POST("/mails/:id/claim", mailController.ClaimMail)
-		protected.POST("/mails/send", mailController.SendMail)
 
+	}
+
+	admin := router.Group("/api/v1/admin")
+	admin.Use(middleware.AdminAuth())
+	{
+		admin.GET("/users", userController.GetUsers)
+		admin.POST("/mails/send", mailController.SendMail)
 	}
 
 	router.GET("/admin/mail", mailController.SendMailPage)
