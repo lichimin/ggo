@@ -3,6 +3,7 @@ package models
 type Mail struct {
 	ID        uint   `json:"id" gorm:"primarykey"`
 	UserID    uint   `json:"user_id" gorm:"not null;index"`
+	Area      int    `json:"area" gorm:"not null;default:1;index"`
 	Title     string `json:"title" gorm:"size:100;default:''"`
 	Content   string `json:"content" gorm:"type:text;not null"`
 	ItemType  string `json:"item_type" gorm:"size:20;default:''"`

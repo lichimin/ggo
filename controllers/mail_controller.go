@@ -27,8 +27,14 @@ func (mc *MailController) GetMails(c *gin.Context) {
 		return
 	}
 
+	area, err := strconv.Atoi(c.DefaultQuery("area", "1"))
+	if err != nil || area <= 0 {
+		utils.ErrorResponse(c, http.StatusBadRequest, "无效的area参数")
+		return
+	}
+
 	var mails []models.Mail
-	if err := mc.db.Where("user_id = ?", userID.(uint)).Order("created_at desc").Find(&mails).Error; err != nil {
+	if err := mc.db.Where("user_id = ? AND area = ?", userID.(uint), area).Order("created_at desc").Find(&mails).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "获取邮件失败: "+err.Error())
 		return
 	}
@@ -180,6 +186,7 @@ func (mc *MailController) ClaimMail(c *gin.Context) {
 
 type SendMailRequest struct {
 	UserIDs []uint `json:"user_ids" binding:"required,min=1"`
+	Area    int    `json:"area" binding:"required,min=1"`
 	Title   string `json:"title"`
 	Content string `json:"content" binding:"required"`
 	Type    string `json:"type" binding:"required"`
@@ -210,6 +217,7 @@ func (mc *MailController) SendMail(c *gin.Context) {
 	for _, uid := range req.UserIDs {
 		mails = append(mails, models.Mail{
 			UserID:   uid,
+			Area:     req.Area,
 			Title:    req.Title,
 			Content:  req.Content,
 			ItemType: req.Type,
@@ -266,6 +274,9 @@ const mailSendHTML = `<!doctype html>
     </div>
 
     <div class="col">
+      <label>area（区服）</label>
+      <input id="area" type="number" min="1" value="1"/>
+
       <label>标题（可选）</label>
       <input id="title" placeholder="例如：系统补偿"/>
 
@@ -353,8 +364,10 @@ const mailSendHTML = `<!doctype html>
       setResult('发送中...');
       try {
         const userIDs = Array.from(new Set([...selectedUserIds(), ...parseUserIdsText()]));
+        const area = parseInt(document.getElementById('area').value, 10) || 0;
         const payload = {
           user_ids: userIDs,
+          area: area,
           title: document.getElementById('title').value,
           content: document.getElementById('content').value,
           type: document.getElementById('type').value,
