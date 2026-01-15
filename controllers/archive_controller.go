@@ -76,6 +76,21 @@ func (ac *ArchiveController) SaveArchive(c *gin.Context) {
 				if err := tx.Create(&archive).Error; err != nil {
 					return err
 				}
+
+				welcomeMail := models.Mail{
+					UserID:   userID.(uint),
+					Area:     req.Area,
+					Title:    "新手福利",
+					Content:  "欢迎来到夺宝迷宫，本游戏现在处于内测阶段，月卡免费解锁，装备回收换取钻石，自由探索，轻松搜打撤。",
+					ItemType: "diamond",
+					ItemID:   0,
+					Num:      3000,
+					Status:   0,
+				}
+				if err := tx.Create(&welcomeMail).Error; err != nil {
+					return err
+				}
+
 				saveSuccess = true
 				responseMessage = "新存档创建成功"
 				return nil

@@ -213,8 +213,23 @@ func (mc *MailController) SendMail(c *gin.Context) {
 		return
 	}
 
-	mails := make([]models.Mail, 0, len(req.UserIDs))
-	for _, uid := range req.UserIDs {
+	targetUserIDs := req.UserIDs
+	if len(req.UserIDs) == 1 && req.UserIDs[0] == 0 {
+		var areaUserIDs []uint
+		if err := mc.db.Model(&models.Archive{}).Distinct("user_id").Where("area = ?", req.Area).Pluck("user_id", &areaUserIDs).Error; err != nil {
+			utils.ErrorResponse(c, http.StatusInternalServerError, "查询区服用户失败: "+err.Error())
+			return
+		}
+		targetUserIDs = areaUserIDs
+	}
+
+	if len(targetUserIDs) == 0 {
+		utils.SuccessResponse(c, gin.H{"message": "发送成功", "count": 0})
+		return
+	}
+
+	mails := make([]models.Mail, 0, len(targetUserIDs))
+	for _, uid := range targetUserIDs {
 		mails = append(mails, models.Mail{
 			UserID:   uid,
 			Area:     req.Area,
@@ -227,7 +242,7 @@ func (mc *MailController) SendMail(c *gin.Context) {
 		})
 	}
 
-	if err := mc.db.Create(&mails).Error; err != nil {
+	if err := mc.db.CreateInBatches(&mails, 1000).Error; err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "发送失败: "+err.Error())
 		return
 	}
@@ -270,7 +285,7 @@ const mailSendHTML = `<!doctype html>
       <select id="users" multiple size="10"></select>
       <div class="hint">也可在下方手动填写 user_ids（逗号分隔）</div>
       <label>user_ids（可选）</label>
-      <input id="userIdsText" placeholder="例如：1,2,3"/>
+      <input id="userIdsText" placeholder="例如：1,2,3（填0表示该区全服）"/>
     </div>
 
     <div class="col">
@@ -332,7 +347,7 @@ const mailSendHTML = `<!doctype html>
     function parseUserIdsText() {
       const raw = document.getElementById('userIdsText').value.trim();
       if (!raw) return [];
-      return raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !Number.isNaN(n) && n > 0);
+      return raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !Number.isNaN(n) && n >= 0);
     }
 
     document.getElementById('loadUsers').addEventListener('click', async () => {
