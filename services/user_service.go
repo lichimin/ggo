@@ -1,7 +1,10 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"ggo/database"
 	"ggo/models"
 	"ggo/utils"
 	"time"
@@ -79,6 +82,14 @@ func (s *UserService) register(req *models.UserLoginRequest) (*models.UserLoginR
 		return nil, "", err
 	}
 
+	if database.RedisClient != nil {
+		ttl, ttlErr := utils.GetRemainingTime(token)
+		if ttlErr != nil {
+			ttl = 7 * 24 * time.Hour
+		}
+		database.RedisClient.Set(context.Background(), fmt.Sprintf("auth:token:%d", user.ID), token, ttl)
+	}
+
 	response := &models.UserLoginResponse{
 		UserID:   user.ID,
 		Username: user.Username,
@@ -105,6 +116,14 @@ func (s *UserService) login(user *models.User, password string) (*models.UserLog
 	newToken, err := utils.GenerateToken(user.ID, user.Username)
 	if err != nil {
 		return nil, "", err
+	}
+
+	if database.RedisClient != nil {
+		ttl, ttlErr := utils.GetRemainingTime(newToken)
+		if ttlErr != nil {
+			ttl = 7 * 24 * time.Hour
+		}
+		database.RedisClient.Set(context.Background(), fmt.Sprintf("auth:token:%d", user.ID), newToken, ttl)
 	}
 
 	response := &models.UserLoginResponse{

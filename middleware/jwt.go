@@ -1,9 +1,13 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
+	"ggo/database"
 	"ggo/utils"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,11 +39,30 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
+		if database.RedisClient == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "认证服务未就绪"})
+			c.Abort()
+			return
+		}
+
+		currentToken, err := database.RedisClient.Get(context.Background(), fmt.Sprintf("auth:token:%d", claims.UserID)).Result()
+		if err != nil || currentToken != token {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token已作废"})
+			c.Abort()
+			return
+		}
+
 		// 每次请求都续签token
 		newToken, err := utils.RefreshToken(token)
 		if err == nil {
 			// 设置新的token到响应头
 			c.Header("X-New-Token", newToken)
+
+			ttl, ttlErr := utils.GetRemainingTime(newToken)
+			if ttlErr != nil {
+				ttl = 7 * 24 * time.Hour
+			}
+			database.RedisClient.Set(context.Background(), fmt.Sprintf("auth:token:%d", claims.UserID), newToken, ttl)
 		}
 
 		// 将用户信息存入context
@@ -64,6 +87,14 @@ func OptionalJWTAuth() gin.HandlerFunc {
 			token := parts[1]
 			claims, err := utils.ParseToken(token)
 			if err == nil {
+				if database.RedisClient != nil {
+					currentToken, err := database.RedisClient.Get(context.Background(), fmt.Sprintf("auth:token:%d", claims.UserID)).Result()
+					if err != nil || currentToken != token {
+						c.Next()
+						return
+					}
+				}
+
 				// 将用户信息存入context
 				c.Set("userID", claims.UserID)
 				c.Set("username", claims.Username)
@@ -72,6 +103,14 @@ func OptionalJWTAuth() gin.HandlerFunc {
 				newToken, err := utils.RefreshToken(token)
 				if err == nil {
 					c.Header("X-New-Token", newToken)
+
+					if database.RedisClient != nil {
+						ttl, ttlErr := utils.GetRemainingTime(newToken)
+						if ttlErr != nil {
+							ttl = 7 * 24 * time.Hour
+						}
+						database.RedisClient.Set(context.Background(), fmt.Sprintf("auth:token:%d", claims.UserID), newToken, ttl)
+					}
 				}
 			}
 		}
