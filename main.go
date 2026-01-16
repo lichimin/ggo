@@ -15,6 +15,8 @@ func main() {
 	database.InitPostgres(cfg.PostgresDSN)
 	database.InitRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 
+	startDailyBossDamageRewardScheduler()
+
 	// 设置路由并启动服务
 	router := routes.SetupRoutes(cfg)
 
