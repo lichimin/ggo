@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ggo/database"
 	"ggo/models"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -106,8 +107,8 @@ func listAreasForRewards(db *gorm.DB) ([]int, error) {
 	if err := db.Select("area").Order("area asc").Find(&areas).Error; err == nil && len(areas) > 0 {
 		out := make([]int, 0, len(areas))
 		for _, a := range areas {
-			if a.Area > 0 {
-				out = append(out, a.Area)
+			if val, err := strconv.Atoi(a.Area); err == nil && val > 0 {
+				out = append(out, val)
 			}
 		}
 		if len(out) > 0 {
