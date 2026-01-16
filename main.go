@@ -4,6 +4,7 @@ import (
 	"ggo/config"
 	"ggo/database"
 	"ggo/routes"
+	"ggo/services"
 	"log"
 )
 
@@ -15,7 +16,7 @@ func main() {
 	database.InitPostgres(cfg.PostgresDSN)
 	database.InitRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
 
-	startDailyBossDamageRewardScheduler()
+	services.StartDailyBossDamageRewardScheduler()
 
 	// 设置路由并启动服务
 	router := routes.SetupRoutes(cfg)

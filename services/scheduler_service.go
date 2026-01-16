@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type bossDamageRankRow struct {
 	Value  int
 }
 
-func startDailyBossDamageRewardScheduler() {
+func StartDailyBossDamageRewardScheduler() {
 	db := database.DB
 	if db == nil || database.RedisClient == nil {
 		return
@@ -125,16 +125,15 @@ func listAreasForRewards(db *gorm.DB) ([]int, error) {
 func rewardDiamondByRank(rank int) int {
 	switch rank {
 	case 1:
-		return 600
+		return 1200
 	case 2:
-		return 400
+		return 1000
 	case 3:
-		return 300
+		return 800
 	default:
 		if rank >= 4 && rank <= 10 {
-			return 200
+			return 500
 		}
 		return 0
 	}
 }
-
